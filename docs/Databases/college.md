@@ -1,0 +1,12 @@
+College
+---------
+_id
+name
+shortName
+emailDomains[]
+location
+logo
+website
+isVerified
+createdAt
+updatedAt
