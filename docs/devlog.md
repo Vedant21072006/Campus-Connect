@@ -29,6 +29,8 @@ Start planning the project.
 
 # Day 2 (14 July 2026)
 
+
+
 ## Goal
 
 - Design the Authentication module.
@@ -53,3 +55,14 @@ Start planning the project.
 
 ## learnings 
 - Structural design of API's and Databases without actual coding.
+
+
+# Day 3 (15 July 2026)
+
+## Goal
+- setup application
+- Develop Authentication frontend UI
+## completed 
+- setuped backend server
+- developed frontend UI
+- Connected the application with mongodb database

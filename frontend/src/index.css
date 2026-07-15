@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: #FFFDF7;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #16151A;
+  border-radius: 8px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; margin-top: -8px; }
+  to { opacity: 1; margin-top: 0; }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+.sticker-wiggle:hover {
+  animation: wiggle 0.4s ease-in-out;
+}
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.float {
+  animation: floaty 3.5s ease-in-out infinite;
+}
