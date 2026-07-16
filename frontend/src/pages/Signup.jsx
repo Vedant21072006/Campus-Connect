@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Mail, ShieldCheck, Rocket, ArrowLeft } from 'lucide-react'
+import { User, Mail, Lock, ShieldCheck, Rocket, ArrowLeft } from 'lucide-react'
 import Loader from '../components/Loader.jsx'
 import Toast from '../components/Toast.jsx'
 
@@ -9,6 +9,7 @@ export default function Signup() {
   const [step, setStep] = useState('details') // 'details' | 'otp'
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
   const [loadingSend, setLoadingSend] = useState(false)
   const [loadingVerify, setLoadingVerify] = useState(false)
@@ -17,8 +18,8 @@ export default function Signup() {
 
   const handleSendOtp = async (e) => {
     e.preventDefault()
-    if (!username || !email) {
-      setToast({ message: 'Fill in both fields first!', type: 'error' })
+    if (!username || !email || !password) {
+      setToast({ message: 'Fill in all fields first!', type: 'error' })
       return
     }
     setLoadingSend(true)
@@ -113,6 +114,20 @@ export default function Signup() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@college.edu.in"
+                    className="w-full pl-11 pr-4 py-3 rounded-xl border-[3px] border-ink focus:bg-sunny/20 outline-none text-sm transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-display font-semibold mb-1.5 block">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" size={18} />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
                     className="w-full pl-11 pr-4 py-3 rounded-xl border-[3px] border-ink focus:bg-sunny/20 outline-none text-sm transition"
                   />
                 </div>

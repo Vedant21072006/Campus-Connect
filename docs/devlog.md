@@ -66,3 +66,13 @@ Start planning the project.
 - setuped backend server
 - developed frontend UI
 - Connected the application with mongodb database
+
+# Day 4 (16 July 2026)
+
+## Goal 
+- Complete register authentication
+- Learn redis ans zod
+
+## completed 
+- Register api for atuhentication is 60% completed
+- Zod implemented in register api
