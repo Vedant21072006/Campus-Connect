@@ -26,6 +26,5 @@
     "rate-limit-redis": "^5.0.0",
     "redis": "^6.1.0",
     "zod": "^4.4.3"
-  },
-  "devDependencies": {}
+  }
 }

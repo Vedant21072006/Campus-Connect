@@ -76,3 +76,14 @@ Start planning the project.
 ## completed 
 - Register api for atuhentication is 60% completed
 - Zod implemented in register api
+
+# Day 5 (17 July 2026)
+
+## Goal
+- Complete register and login api
+- implement redis for otp storage
+
+## completed
+- Completed register and login api
+- implement redis for opt storage
+- token storage in cookies

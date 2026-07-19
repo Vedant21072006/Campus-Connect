@@ -10,7 +10,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState(null)
-
+  const apiUrl = import.meta.env.VITE_API_URL
   const handleLogin = async (e) => {
     e.preventDefault()
     if (!email || !password) {
@@ -19,9 +19,28 @@ export default function Login() {
     }
     setLoading(true)
     try {
-      // Replace with your real API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      setToast({ message: "You're in! 🎉", type: 'success' })
+      let logindetails={email,password}
+      let api = await fetch(`${apiUrl}/auth/login`,{
+        method:'POST',
+        credentials:'include',
+        body:JSON.stringify(logindetails),
+        headers:{
+          'Content-Type':'application/json'
+        }
+       
+        
+        
+      })
+      api =await api.json()
+      console.log(api);
+      
+      if(!api.success){
+        setToast({message:api.message,type:'error'})
+        return
+      }
+
+       
+      setToast({ message: `Welcome ${api.user.name} 🎉`, type: 'success' })
     } catch (err) {
       setToast({ message: 'Wrong email or password.', type: 'error' })
     } finally {

@@ -56,18 +56,17 @@ Registers a new student account and sends an OTP to the registered college email
 | Status Code | Reason |
 |-------------|--------|
 |400|Invalid input|
-|400|Weak password|
 |400|Invalid college email|
 |409|Email already registered|
 
 ---
 
-# 2. Verify Email
+# 2. Verify otp
 
 ### Endpoint
 
 ```http
-POST /api/auth/verify-email
+POST /api/auth/verify-otp
 ```
 
 ### Description

@@ -3,37 +3,69 @@ import { useNavigate } from 'react-router-dom'
 import { User, Mail, Lock, ShieldCheck, Rocket, ArrowLeft } from 'lucide-react'
 import Loader from '../components/Loader.jsx'
 import Toast from '../components/Toast.jsx'
-
+const apiUrl = import.meta.env.VITE_API_URL
 export default function Signup() {
   const navigate = useNavigate()
   const [step, setStep] = useState('details') // 'details' | 'otp'
+
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
+  const [userId,setUserId]= useState('')
+
   const [loadingSend, setLoadingSend] = useState(false)
   const [loadingVerify, setLoadingVerify] = useState(false)
   const [loadingResend, setLoadingResend] = useState(false)
   const [toast, setToast] = useState(null)
 
-  const handleSendOtp = async (e) => {
+  {/* Backend events */ }
+  const sendOtp = async (e) => {
     e.preventDefault()
-    if (!username || !email || !password) {
-      setToast({ message: 'Fill in all fields first!', type: 'error' })
-      return
-    }
-    setLoadingSend(true)
+  setLoadingSend(true)
+  console.log(apiUrl);
+  
     try {
-      // Replace with your real API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      if (!username || !email || !password) {
+        setToast({ message: 'Fill in all fields first!', type: 'error' })
+        return
+      }
+      const registerDetails  = { name:username, email, password }
+
+      
+        
+        let api = await fetch(`${apiUrl}/auth/register`, {
+        method: 'POST',
+        credentials: 'include',
+        body: JSON.stringify(registerDetails),
+        headers: {
+  'Content-Type': 'application/json'
+}
+      })
+      api = await api.json()
+    console.log(api);
+    
+      if (!api.success && api.status == 'VERIFIED_USER') {
+        setToast({ message: 'Account already exists try loggin-in' })
+        return
+      }
+    
+     setUserId(api.userId)
       setToast({ message: 'OTP sent! Check your inbox 📬', type: 'success' })
       setStep('otp')
-    } catch (err) {
-      setToast({ message: "Couldn't send OTP, try again.", type: 'error' })
-    } finally {
+
+
+        }
+    catch (error) {
+     setToast({ message: "Couldn't send OTP, try again.", type: 'error' })
+      
+    }
+    finally{
       setLoadingSend(false)
     }
   }
+
+
 
   const handleResendOtp = async () => {
     setLoadingResend(true)
@@ -55,8 +87,19 @@ export default function Signup() {
     }
     setLoadingVerify(true)
     try {
-      // Replace with your real API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      let api = await fetch(`${apiUrl}/auth/verify-otp`,{
+        method:'POST',
+        credentials:'include',
+          body:JSON.stringify({userId,otp}),
+          headers:{
+            'Content-Type':'application/json'
+          }
+      })
+      api =await api.json()
+      if(!api.success){
+        setToast({message:api.message,type:'error'})
+        return
+      }
       setToast({ message: "Verified! Welcome aboard 🎉", type: 'success' })
     } catch (err) {
       setToast({ message: 'Invalid or expired OTP.', type: 'error' })
@@ -90,11 +133,12 @@ export default function Signup() {
             <h1 className="font-display text-2xl font-semibold mb-1">Let's get you in 🚀</h1>
             <p className="text-ink/60 text-sm mb-8">Sign up with your college email.</p>
 
-            <form onSubmit={handleSendOtp} className="space-y-4">
+            <form onSubmit={sendOtp} className="space-y-4">
               <div>
                 <label className="text-xs font-display font-semibold mb-1.5 block">Username</label>
                 <div className="relative">
                   <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" size={18} />
+
                   <input
                     type="text"
                     value={username}
