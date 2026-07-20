@@ -87,3 +87,9 @@ Start planning the project.
 - Completed register and login api
 - implement redis for opt storage
 - token storage in cookies
+
+# Day 6 (19 July)
+
+## goal 
+- Design onboarding page
+- Basic development of onboarding page

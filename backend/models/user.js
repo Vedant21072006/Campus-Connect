@@ -1,11 +1,16 @@
 import mongoose from "mongoose";
 
+/* =========================
+   SUB SCHEMAS
+========================= */
+
 const collegeSchema = new mongoose.Schema(
   {
     collegeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "College",
       default: null,
+
     },
     collegeName: {
       type: String,
@@ -38,9 +43,39 @@ const collegeSchema = new mongoose.Schema(
 
 const locationSchema = new mongoose.Schema(
   {
-    city: String,
-    state: String,
-    country: String,
+    // Permanent home location
+    hometown: {
+      city: {
+        type: String,
+        trim: true,
+      },
+      state: {
+        type: String,
+        trim: true,
+      },
+      country: {
+        type: String,
+        trim: true,
+        default: 'India',
+      },
+    },
+
+    // Temporary current stay location
+    current: {
+      city: {
+        type: String,
+        trim: true,
+      },
+      state: {
+        type: String,
+        trim: true,
+      },
+      country: {
+        type: String,
+        trim: true,
+        default: 'India',
+      },
+    },
   },
   { _id: false }
 );
@@ -81,6 +116,7 @@ const professionalSchema = new mongoose.Schema(
     portfolioUrl: String,
     githubUrl: String,
     linkedinUrl: String,
+    instagram: String,
     codingPlatformUrl: String,
     website: String,
   },
@@ -132,6 +168,43 @@ const statsSchema = new mongoose.Schema(
   { _id: false }
 );
 
+/* =========================
+   NEW ADDITION (NON-BREAKING)
+========================= */
+
+const academicProfileSchema = new mongoose.Schema(
+  {
+    currentSemester: Number,
+
+    interestedDomains: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+
+    lookingFor: [
+      {
+        type: String,
+        enum: [
+          "friends",
+          "studyPartners",
+          "projectTeammates",
+          "hackathonTeam",
+          "internshipReferrals",
+          "mentorship",
+          "startupCofounders",
+        ],
+      },
+    ],
+  },
+  { _id: false }
+);
+
+/* =========================
+   USER SCHEMA
+========================= */
+
 const userSchema = new mongoose.Schema(
   {
     // Authentication
@@ -171,6 +244,14 @@ const userSchema = new mongoose.Schema(
       default: "active",
     },
 
+    /* =========================
+       NEW - ONBOARDING
+    ========================= */
+onboardingCompleted: {
+  type: Boolean,
+  default: false,
+},
+
     // Basic Information
     firstName: {
       type: String,
@@ -184,12 +265,12 @@ const userSchema = new mongoose.Schema(
 
     username: {
       type: String,
+      unique: true,
       sparse: true,
       trim: true,
       lowercase: true,
-    },
-    lastlogin:{
-      type:Date
+      minlength: 3,
+      maxlength: 20,
     },
 
     bio: {
@@ -217,23 +298,86 @@ const userSchema = new mongoose.Schema(
     // Recommendation
     recommendation: recommendationSchema,
 
+    /* =========================
+       NEW - ACADEMIC PROFILE
+    ========================= */
+
+    academicProfile: academicProfileSchema,
+
     // Professional
     professional: professionalSchema,
 
     // Privacy
     privacy: privacySchema,
 
+    /* =========================
+       NEW - PRESENCE
+    ========================= */
+
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
+
+    lastSeen: Date,
+
     // Statistics
     stats: statsSchema,
 
+    // Login tracking
     lastLogin: {
       type: Date,
+      default: Date.now,
     },
+
+    /* =========================
+       NEW - SEARCH OPTIMIZATION
+    ========================= */
+
+    searchKeywords: [
+      {
+        type: String,
+        lowercase: true,
+        trim: true,
+      },
+    ],
   },
   {
     timestamps: true,
   }
 );
+
+/* =========================
+   INDEXES
+========================= */
+
+userSchema.index({ email: 1 });
+userSchema.index({ username: 1 });
+userSchema.index({ "college.collegeName": 1 });
+userSchema.index({ "college.branch": 1 });
+userSchema.index({ "college.year": 1 });
+userSchema.index({ searchKeywords: 1 });
+
+/* =========================
+   VIRTUALS
+========================= */
+
+userSchema.virtual("fullName").get(function () {
+  return `${this.firstName || ""} ${this.lastName || ""}`.trim();
+});
+
+/* =========================
+   HIDE SENSITIVE DATA
+========================= */
+
+userSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+
+  delete obj.passwordHash;
+  delete obj.__v;
+
+  return obj;
+};
 
 const User = mongoose.model("User", userSchema);
 
