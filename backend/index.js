@@ -6,6 +6,7 @@ import authRoute from './routes/authRoutes.js'
 import { connectRedis } from './config/redis.js'
 import cookieParser from 'cookie-parser'
 import { tr } from 'zod/v4/locales'
+import profileRoute from './routes/profileRoutes.js'
 dotenv.config()
 const app = express()
 
@@ -18,6 +19,7 @@ app.use(cors({
 app.use(cookieParser())
 app.use(express.json())
 app.use('/api/auth',authRoute)
+app.use('/api/profile',profileRoute)
 
 await connectDB()
 await connectRedis()

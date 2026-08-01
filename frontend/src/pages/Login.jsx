@@ -39,8 +39,11 @@ export default function Login() {
         return
       }
 
-       
+       if(api.success){
       setToast({ message: `Welcome ${api.user.name} 🎉`, type: 'success' })
+      navigate('/onboarding')
+       }
+
     } catch (err) {
       setToast({ message: 'Wrong email or password.', type: 'error' })
     } finally {

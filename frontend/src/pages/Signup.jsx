@@ -101,6 +101,7 @@ export default function Signup() {
         return
       }
       setToast({ message: "Verified! Welcome aboard 🎉", type: 'success' })
+      navigate('/onboarding')
     } catch (err) {
       setToast({ message: 'Invalid or expired OTP.', type: 'error' })
     } finally {

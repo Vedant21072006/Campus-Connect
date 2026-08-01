@@ -93,3 +93,10 @@ Start planning the project.
 ## goal 
 - Design onboarding page
 - Basic development of onboarding page
+
+# Day 7 
+
+## work Completed
+- Onboarding v0.1 implementation 
+- successfull updation of user data
+- Planning home page
