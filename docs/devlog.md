@@ -100,3 +100,9 @@ Start planning the project.
 - Onboarding v0.1 implementation 
 - successfull updation of user data
 - Planning home page
+
+# Day 8
+
+## work completed
+- designing and  implementation of profile page
+- Api design and development of profile pag
