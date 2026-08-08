@@ -4,6 +4,7 @@ import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Onboarding from './pages/Onboarding.jsx'
 import Profile from './pages/Profile.jsx'
+import Feed from './pages/Feed.jsx'
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path='/feed'   element={<Feed/>} />
       </Routes>
     </BrowserRouter>
   )

@@ -128,7 +128,7 @@ export default function Onboarding() {
       })
       if (!res.ok) throw new Error('Failed to save profile')
       setToast({ message: 'Profile complete! Welcome to campus 🎉', type: 'success' })
-      setTimeout(() => navigate('/'), 1200)
+      setTimeout(() => navigate('/feed'), 1200)
     } catch (err) {
       setToast({ message: "Couldn't save your profile. Try again.", type: 'error' })
     } finally {

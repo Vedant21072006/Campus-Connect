@@ -10,7 +10,7 @@ const LINKS = [
 ]
 
 export default function ProfessionalSection({ data }) {
-  const filled = LINKS.filter(({ key }) => data[key])
+  const filled = LINKS.filter(({ key }) => data?.[key])
 
   if (filled.length === 0) {
     return (

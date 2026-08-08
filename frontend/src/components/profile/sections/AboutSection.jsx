@@ -17,12 +17,12 @@ export default function AboutSection({ data }) {
           </div>
           <h3 className="font-display font-semibold text-base">College Information</h3>
         </div>
-        <InfoRow icon={GraduationCap} label="College" value={data.college.collegeName} />
-        <InfoRow icon={BookOpen} label="Course" value={data.college.course} />
-        <InfoRow icon={Hash} label="Department" value={data.college.department} />
-        <InfoRow icon={Users2} label="Branch" value={data.college.branch} />
-        <InfoRow icon={Calendar} label="Year" value={data.college.year && `${data.college.year}${['st','nd','rd'][data.college.year - 1] || 'th'} year`} />
-        <InfoRow icon={Hash} label="Section" value={data.college.section} />
+        <InfoRow icon={GraduationCap} label="College" value={data?.college?.collegeName} />
+        <InfoRow icon={BookOpen} label="Course" value={data?.college?.course} />
+        <InfoRow icon={Hash} label="Department" value={data?.college?.department} />
+        <InfoRow icon={Users2} label="Branch" value={data?.college?.branch} />
+        <InfoRow icon={Calendar} label="Year" value={data?.college?.year && `${data.college.year}${['st','nd','rd'][data.college.year - 1] || 'th'} year`} />
+        <InfoRow icon={Hash} label="Section" value={data?.college?.section} />
       </div>
 
       <div className="bg-sky/30 border-[3px] border-ink rounded-2xl p-5 shadow-hard rotate-1 hover:rotate-0 transition-transform">
@@ -32,8 +32,8 @@ export default function AboutSection({ data }) {
           </div>
           <h3 className="font-display font-semibold text-base">Location</h3>
         </div>
-        <InfoRow icon={MapPin} label="Current city" value={data.location.city} />
-        <InfoRow icon={Home} label="Home town" value={data.location.homeTown} />
+        <InfoRow icon={MapPin} label="Current city" value={data?.location?.current?.city} />
+        <InfoRow icon={Home} label="Home town" value={data?.location?.hometown?.city} />
       </div>
     </div>
   )

@@ -38,10 +38,10 @@ const ChipGroup = ({ icon: Icon, title, items, colorKey }) => {
 export default function InterestsSkillsSection({ data }) {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
-      <ChipGroup icon={Sparkles} title="Interests" items={data.recommendation.interests} colorKey="interests" />
-      <ChipGroup icon={Zap} title="Skills" items={data.recommendation.skills} colorKey="skills" />
-      <ChipGroup icon={Heart} title="Hobbies" items={data.recommendation.hobbies} colorKey="hobbies" />
-      <ChipGroup icon={Languages} title="Languages" items={data.recommendation.languages} colorKey="languages" />
+      <ChipGroup icon={Sparkles} title="Interests" items={data?.recommendation?.interests || []} colorKey="interests" />
+      <ChipGroup icon={Zap} title="Skills" items={data?.recommendation?.skills || []} colorKey="skills" />
+      <ChipGroup icon={Heart} title="Hobbies" items={data?.recommendation?.hobbies || []} colorKey="hobbies" />
+      <ChipGroup icon={Languages} title="Languages" items={data?.recommendation?.languages || []} colorKey="languages" />
     </div>
   )
 }

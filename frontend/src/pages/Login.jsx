@@ -41,7 +41,10 @@ export default function Login() {
 
        if(api.success){
       setToast({ message: `Welcome ${api.user.name} 🎉`, type: 'success' })
-      navigate('/onboarding')
+      setTimeout(()=>{
+             navigate('/feed')
+      },3000)
+
        }
 
     } catch (err) {

@@ -106,3 +106,18 @@ Start planning the project.
 ## work completed
 - designing and  implementation of profile page
 - Api design and development of profile pag
+
+# Day 9 
+
+## work completed
+- Fixed integration issues of profile api 
+- 60% integration done in profile page
+
+# Day 9
+
+## work completed 
+-Designing  of the Home page 
+
+# Day 10 
+- Home page frontend implemented
+- basic post api's created

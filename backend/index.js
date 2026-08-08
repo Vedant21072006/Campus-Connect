@@ -7,6 +7,7 @@ import { connectRedis } from './config/redis.js'
 import cookieParser from 'cookie-parser'
 import { tr } from 'zod/v4/locales'
 import profileRoute from './routes/profileRoutes.js'
+import postRoute from './routes/postRoute.js'
 dotenv.config()
 const app = express()
 
@@ -20,6 +21,7 @@ app.use(cookieParser())
 app.use(express.json())
 app.use('/api/auth',authRoute)
 app.use('/api/profile',profileRoute)
+app.use('/api/post',postRoute)
 
 await connectDB()
 await connectRedis()

@@ -3,10 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { Camera, Pencil, Settings, MapPin, Calendar, Flame, Star, Circle } from 'lucide-react'
 
 // Fields counted toward the completion bar — extend this if you add more onboarding fields later.
-const completionFields = (data) => [
-  data.profilePicture, data.bio, data.college.collegeName, data.college.department,
-  data.location.city, data.recommendation.interests.length > 0, data.recommendation.skills.length > 0,
-  Object.values(data.professional).some(Boolean),
+const completionFields = (data = {}) => [
+  data?.profilePicture,
+  data?.bio,
+  data?.college?.collegeName,
+  data?.college?.department,
+  data?.location?.current?.city,
+  (data?.recommendation?.interests || []).length > 0,
+  (data?.recommendation?.skills || []).length > 0,
+  Object.values(data?.professional || {}).some(Boolean),
 ]
 
 const STAT_COLORS = ['bg-sunny', 'bg-bubblegum', 'bg-sky']
@@ -66,7 +71,7 @@ export default function ProfileHeader({ data, isOwner, onImageChange }) {
               {data.profilePicture ? (
                 <img src={data.profilePicture} alt={data.firstName} className="w-full h-full object-cover" />
               ) : (
-                <span className="font-display font-semibold text-3xl">{data.firstName?.[0]?.toUpperCase()}</span>
+                <span className="font-display font-semibold text-3xl">{data.firstName?.charAt(0).toUpperCase() || "?"}</span>
               )}
             </div>
             {isOwner && (
@@ -116,20 +121,23 @@ export default function ProfileHeader({ data, isOwner, onImageChange }) {
         {data.bio && <p className="text-sm text-ink/70 leading-relaxed max-w-xl mb-3">{data.bio}</p>}
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink/50 mb-4">
-          {data.location.city && (
-            <span className="flex items-center gap-1"><MapPin size={13} /> {data.location.city}</span>
+          {data?.location?.current?.city && (
+            <span className="flex items-center gap-1">
+              <MapPin size={13} />
+              {data.location.current.city}
+            </span>
           )}
           <span className="flex items-center gap-1">
-            <Calendar size={13} /> Joined {new Date(data.joinedDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+            <Calendar size={13} /> Joined {new Date(data.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
           </span>
         </div>
 
         {/* Stats bar — tilted sticker-style cards, alternating colors */}
         <div className="flex flex-wrap gap-2.5 mb-5">
           {[
-            ['Posts', data.stats.postsCount],
-            ['Friends', data.stats.friendsCount],
-            ['Communities', data.stats.communitiesCount],
+            ['Posts', data.stats?.postsCount || "0"],
+            ['Friends', data.stats?.friendsCount || "0"],
+            ['Communities', data.stats?.communitiesCount || "0"],
           ].map(([label, count], i) => (
             <div
               key={label}
