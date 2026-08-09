@@ -8,7 +8,31 @@ const postSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    
+    authorSnapshot: {
+      username: {
+        type: String,
+        required: true,
+      },
 
+      college: {
+        year: {
+          type: String,
+        },
+
+        course: {
+          type: String,
+        },
+
+        branch: {
+          type: String,
+        },
+      },
+
+      role: {
+        type: String,
+      },
+    },
     metadata: {
       title: {
         type: String,
@@ -45,12 +69,10 @@ const postSchema = new mongoose.Schema(
     postType: {
       type: String,
       enum: [
-        "general",
-        "achievement",
-        "project",
-        "question",
-        "event",
-        "announcement",
+          "GENERAL",
+    "QUESTION",
+    "EVENT",
+    "ACHIEVEMENT"
       ],
       default: "general",
       index: true,

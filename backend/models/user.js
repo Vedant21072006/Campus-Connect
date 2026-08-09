@@ -278,6 +278,7 @@ onboardingCompleted: {
       maxlength: 300,
       default: "",
     },
+  
 
     profilePicture: {
       type: String,
