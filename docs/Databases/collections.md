@@ -1,9 +1,9 @@
-Users
+Users -
 Colleges
-Posts
+Posts-
 Comments
 Communities
-Friendships
+Friendships-
 Conversations
 Messages
 Notifications

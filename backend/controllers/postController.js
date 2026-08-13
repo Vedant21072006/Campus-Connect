@@ -1,4 +1,4 @@
-import { ErrorReply } from "redis";
+import { ErrorReply, RedisClientPool } from "redis";
 import Post from "../models/post.js";
 import { success } from "zod";
 import User from "../models/user.js";
@@ -24,9 +24,9 @@ export const createPost = async (req, res) => {
 
     const { username, college, role } = authorDetails;
 
-    const media=[]
+    const media = []
 
-       if (req.files && req.files.length > 0) {
+    if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         const result = await new Promise((resolve, reject) => {
           cloudinary.uploader
@@ -70,7 +70,7 @@ export const createPost = async (req, res) => {
       metadata: {
         title,
         description,
-        media: media ,
+        media: media,
       },
 
       postType,
@@ -97,11 +97,11 @@ export const getPosts = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(10);
 
-  
+
     return res.status(200).json({
       success: true,
       postdata
-   
+
     });
   } catch (error) {
     return res.status(500).json({
@@ -146,3 +146,22 @@ export const deletePost = async (req, res) => {
     });
   }
 };
+
+export const myPosts = async (req, resp) => {
+  try {
+    const posts = await Post.find({
+      author: req.user._id
+    }).sort({ createdAt: -1 })
+
+    return resp.status(201).json({
+      success:true,
+      posts
+    })
+  }
+  catch (error) {
+    return resp.status(500).json({
+      message: error.message,
+      success: false
+    })
+  }
+}

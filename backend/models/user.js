@@ -247,10 +247,10 @@ const userSchema = new mongoose.Schema(
     /* =========================
        NEW - ONBOARDING
     ========================= */
-onboardingCompleted: {
-  type: Boolean,
-  default: false,
-},
+    onboardingCompleted: {
+      type: Boolean,
+      default: false,
+    },
 
     // Basic Information
     firstName: {
@@ -278,17 +278,30 @@ onboardingCompleted: {
       maxlength: 300,
       default: "",
     },
-  
 
     profilePicture: {
-      type: String,
-      default: "",
+      url: {
+        type: String,
+        default: "",
+      },
+      publicId: {
+        type: String,
+        default: "",
+      },
     },
 
+    
     coverPicture: {
-      type: String,
-      default: "",
+      url: {
+        type: String,
+        default: "",
+      },
+      publicId: {
+        type: String,
+        default: "",
+      },
     },
+
 
     // College
     college: collegeSchema,

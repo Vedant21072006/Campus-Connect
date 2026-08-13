@@ -123,3 +123,10 @@ Start planning the project.
 - basic post api's created
 
 # Day 11 
+- Posts section implemented
+- my posts also implemented
+ - friendship database designed and created
+
+# Day -12
+- friendship api's created
+- frienedship tools frontend designed 

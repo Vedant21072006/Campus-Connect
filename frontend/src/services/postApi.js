@@ -27,3 +27,63 @@ export const createPost = async ({ title, description, postType, visibility, med
 
   return data
 }
+
+
+export const getMyPosts = async () => {
+  const res = await fetch(`${apiUrl}/post/my-posts`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      data?.message || "Failed to fetch posts"
+    );
+  }
+
+  return data;
+};
+
+
+export const deletePost = async (id) => {
+  const res = await fetch(
+    `${apiUrl}/post/delete-post/${id}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      data?.message || "Failed to delete post"
+    );
+  }
+
+  return data;
+};
+
+
+// export const pinPost = async (id) => {
+//   const res = await fetch(
+//     `${apiUrl}/post/pin-post/${id}`,
+//     {
+//       method: "PATCH",
+//       credentials: "include",
+//     }
+//   );
+
+//   const data = await res.json();
+
+//   if (!res.ok) {
+//     throw new Error(
+//       data?.message || "Failed to pin post"
+//     );
+//   }
+
+//   return data;
+// };
