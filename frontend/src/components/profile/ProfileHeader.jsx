@@ -14,6 +14,8 @@ import {
   updateCoverPicture,
 } from '../../services/profilePhotoApi.js'
 
+import FriendshipControls from './sections/FriendshipControls.jsx'
+
 // Fields counted toward the completion bar
 const completionFields = (data = {}) => [
   data?.profilePicture?.url,
@@ -33,7 +35,11 @@ export default function ProfileHeader({
   data,
   isOwner,
   onImageChange,
+  onChat, // called with the profile's userId when "Chat" is picked from the menu
 }) {
+ 
+  
+  
   const navigate = useNavigate()
 
   const coverInputRef = useRef(null)
@@ -234,9 +240,9 @@ export default function ProfileHeader({
           </div>
 
 
-          {/* Owner actions */}
+          {/* Owner actions / Friendship actions */}
 
-          {isOwner && (
+          {isOwner ? (
             <div className="flex items-center gap-2 mb-1">
 
               <button
@@ -258,6 +264,12 @@ export default function ProfileHeader({
               </button>
 
             </div>
+          ) : (
+            <FriendshipControls
+              targetUserId={data?._id}
+              initialStatus={data?.friendship?.status || 'none'}
+              onChat={onChat}
+            />
           )}
 
         </div>

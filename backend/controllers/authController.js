@@ -270,3 +270,21 @@ export const logout = async (req, resp) => {
     });
   }
 };
+
+
+export const me =async(req,resp)=>{
+  try{
+    console.log("user id:",req.user._id);
+   
+   return resp.status(200).json({
+      success:true,
+     _id:req.user._id
+   })
+  }
+  catch(error){
+   return resp.status(500).json({
+      success:false,
+      message:error.message
+   })
+  }
+}

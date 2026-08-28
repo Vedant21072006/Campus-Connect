@@ -3,7 +3,7 @@ import {
   Rocket, ArrowLeft, GraduationCap, Sparkles, Briefcase,
   Users2, Home as HomeIcon, Grid3x3, Trophy, FolderGit2, Star, Zap,
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import ProfileHeader from '../components/profile/ProfileHeader.jsx'
 import SectionTabs from '../components/profile/SectionTabs.jsx'
@@ -14,6 +14,7 @@ import SocialSection from '../components/profile/sections/SocialSection.jsx'
 import CommunitiesSection from '../components/profile/sections/CommunitiesSection.jsx'
 import PostsSection from '../components/profile/sections/PostsSection.jsx'
 import ComingSoonSection from '../components/profile/sections/ComingSoonSection.jsx'
+import { getme } from '../services/meApi.js'
 
 const SECTIONS = [
   { key: 'about', label: 'About', icon: GraduationCap },
@@ -27,38 +28,46 @@ const SECTIONS = [
 ]
 
 export default function Profile() {
+  let {id} = useParams()
   const navigate = useNavigate()
 
-  const [profileData, setProfileData] = useState(null)
+  const [profileData, setProfileData] = useState({})
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('about')
+  const [isOwner,setIsOwner]= useState(false)
+  
 
-  const isOwner = true
-
-  const apiUrl = import.meta.env.VITE_API_URL
-
+   const apiUrl = import.meta.env.VITE_API_URL
   useEffect(() => {
-    const fetchProfile = async () => {
+  
+    
+
+    const fetchProfile = async ()=> {
       try {
-        const response = await fetch(`${apiUrl}/profile/my-profile`, {
+      
+        const response = await fetch(`${apiUrl}/profile/my-profile/${id}`, {
           method: 'GET',
           credentials: 'include',
         })
 
-        const api = await response.json()
 
-        console.log(api)
+        const api = await response.json()
+        
+   
+
+        
 
         if (response.ok && api.success) {
           setProfileData(api.user)
+      setIsOwner(api.isOwnProfile)
         }
+               
       } catch (error) {
         console.log(error)
       } finally {
         setLoading(false)
       }
-    }
-
+    } 
     fetchProfile()
   }, [])
 
@@ -72,7 +81,7 @@ export default function Profile() {
   const renderSection = () => {
     switch (activeTab) {
       case 'about':
-        return <AboutSection data={profileData} />
+        return <AboutSection data={profileData} isOwner={isOwner} />
 
       case 'interests':
         return <InterestsSkillsSection data={profileData} />
@@ -81,7 +90,7 @@ export default function Profile() {
         return <ProfessionalSection data={profileData.professional} />
 
       case 'social':
-        return <SocialSection  />
+        return <SocialSection userId={profileData._id}  />
 
       case 'communities':
         return <CommunitiesSection data={profileData} />

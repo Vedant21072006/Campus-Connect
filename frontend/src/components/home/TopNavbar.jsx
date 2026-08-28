@@ -1,8 +1,20 @@
-import { Menu, Megaphone, Sparkles, Bell } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { Menu, Megaphone, Sparkles, Bell } from 'lucide-react'
+import { getme } from '../../services/meApi.js'
+import { useEffect, useState } from 'react'
 
 export default function TopNavbar({ onMenuClick }) {
-  const nav = useNavigate()
+  const navigate = useNavigate()
+  const [id,setId]= useState('')
+  useEffect(()=>{
+    const getID=async()=>{
+      let temp_id = await getme()
+      setId(temp_id)
+    }
+   getID()
+  },[])
+
+
   return (
     <div className="sticky top-0 z-30 px-2 sm:px-4 pt-2 pb-3 bg-[#F3EFFC]">
       <div
@@ -29,15 +41,18 @@ export default function TopNavbar({ onMenuClick }) {
           <button className="w-10 h-10 bg-[#7C3AED] border-[2.5px] border-ink rounded-xl shadow-hard-sm flex items-center justify-center">
             <Sparkles size={17} className="text-white" fill="white" />
           </button>
-          <button className="relative w-10 h-10 bg-white border-[2.5px] border-ink rounded-xl shadow-hard-sm flex items-center justify-center">
+          <button
+            onClick={() => navigate('/notifications')}
+            className="relative w-10 h-10 bg-white border-[2.5px] border-ink rounded-xl shadow-hard-sm flex items-center justify-center"
+          >
             <Bell size={17} className="text-ink" />
             <span className="absolute -top-2 -right-2 bg-[#EF4444] border-2 border-white text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
               3
             </span>
-          </button>
+          </button >
           {/* Placeholder avatar — swap for a real photo/uploaded image; can't generate a realistic person here */}
-          <div className="w-11 h-11 rounded-full border-[2.5px] border-ink p-0.5 bg-[#7C3AED] shrink-0">
-            <div className="w-full h-full rounded-full bg-[#F3EFFC] flex items-center justify-center text-xs font-bold text-ink" onClick={()=>nav('/profile')} >
+          <div className="w-11 h-11 rounded-full border-[2.5px] border-ink p-0.5 bg-[#7C3AED] shrink-0" onClick={()=>navigate(`/profile/${id}`)} >
+            <div className="w-full h-full rounded-full bg-[#F3EFFC] flex items-center justify-center text-xs font-bold text-ink">
               V
             </div>
           </div>

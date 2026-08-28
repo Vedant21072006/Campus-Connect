@@ -1,5 +1,6 @@
 import express from 'express'
-import { login, logout, register, verifyotp } from '../controllers/authController.js';
+import { login, logout, me, register, verifyotp } from '../controllers/authController.js';
+import { protect } from '../middleware/auth.js';
 
 const router = express.Router()
 
@@ -7,5 +8,6 @@ router.post('/register',register)
 router.post('/verify-otp',verifyotp)
 router.post('/login',login)
 router.post('/logout',logout)
+router.get('/me',protect,me)
 
 export default router;

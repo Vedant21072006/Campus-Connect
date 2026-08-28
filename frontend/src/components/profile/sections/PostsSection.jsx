@@ -11,11 +11,16 @@ import {
   getMyPosts,
   deletePost
 } from "../../../services/postApi.js";
+import { useParams } from "react-router-dom";
 
-export default function PostsSection() {
+export default function PostsSection({data,isOwner}) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openMenu, setOpenMenu] = useState(null);
+
+
+const {id}= useParams()
+
 
   // =========================
   // GET MY POSTS
@@ -26,7 +31,7 @@ export default function PostsSection() {
       try {
         setLoading(true);
 
-        const data = await getMyPosts();
+        const data = await getMyPosts(id);
 
         if (data.success) {
           setPosts(data.posts || []);
@@ -207,61 +212,77 @@ export default function PostsSection() {
 
                   {/* THREE DOTS */}
 
-                  <div className="absolute top-2 right-2">
+  {isOwner && (
+     <div className="absolute top-2 right-2">
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setOpenMenu(
-                          openMenu === post._id
-                            ? null
-                            : post._id
-                        )
-                      }
-                      className="bg-white border-2 border-ink rounded-full p-1 shadow-hard-sm hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
-                    >
-                      <MoreHorizontal size={15} />
-                    </button>
+    <button
+      type="button"
+      onClick={() =>
+        setOpenMenu(
+          openMenu === post._id
+            ? null
+            : post._id
+        )
+      }
+      className="
+        bg-white
+        border-2
+        border-ink
+        rounded-full
+        p-1
+        shadow-hard-sm
+        hover:translate-x-[1px]
+        hover:translate-y-[1px]
+        hover:shadow-none
+        transition-all
+      "
+    >
+      <MoreHorizontal size={15} />
+    </button>
 
-                    {/* DROPDOWN */}
+    {openMenu === post._id && (
+      <div
+        className="
+          absolute
+          right-0
+          top-8
+          z-30
+          w-32
+          bg-white
+          border-[2.5px]
+          border-ink
+          rounded-xl
+          shadow-hard
+          overflow-hidden
+        "
+      >
 
-                    {openMenu === post._id && (
-                      <div className="absolute right-0 top-8 z-30 w-32 bg-white border-[2.5px] border-ink rounded-xl shadow-hard overflow-hidden">
+        <button
+          type="button"
+          onClick={() => handleDelete(post._id)}
+          className="
+            w-full
+            px-3
+            py-2.5
+            flex
+            items-center
+            gap-2
+            text-xs
+            font-semibold
+            text-red-500
+            hover:bg-red-50
+            transition-colors
+          "
+        >
+          <Trash2 size={13} />
+          Delete
+        </button>
 
-                        {/* PIN DISABLED FOR NOW */}
+      </div>
+    )}
 
-                        {/*
-                        <button
-                          type="button"
-                          onClick={() => handlePin(post._id)}
-                          className="w-full px-3 py-2.5 flex items-center gap-2 text-xs font-semibold hover:bg-cream transition-colors"
-                        >
-                          <Pin size={13} />
-
-                          {post.pinned
-                            ? "Unpin"
-                            : "Pin"}
-                        </button>
-                        */}
-
-                        {/* DELETE */}
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleDelete(post._id)
-                          }
-                          className="w-full px-3 py-2.5 flex items-center gap-2 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 size={13} />
-
-                          Delete
-                        </button>
-
-                      </div>
-                    )}
-
-                  </div>
+  </div>
+)}
 
                 </div>
 

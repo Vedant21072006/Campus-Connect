@@ -49,19 +49,24 @@ export const completeOnboarding = async (req, resp) => {
 
 export const getMyProfile = async (req, res) => {
   try {
-
-    const user = await User.findById(req.user._id).select("-passwordHash -__v");
-
+    let {userId} = req.params
+    const user = await User.findById(userId).select("-passwordHash -__v");
+    let isOwnProfile = false;
     if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
-
+    if(userId == req.user._id ){
+      isOwnProfile=true;
+    }
+     console.log(isOwnProfile);
+     
     return res.status(200).json({
       success: true,
       user,
+      isOwnProfile
     });
 
   } catch (error) {

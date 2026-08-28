@@ -29,8 +29,8 @@ export const createPost = async ({ title, description, postType, visibility, med
 }
 
 
-export const getMyPosts = async () => {
-  const res = await fetch(`${apiUrl}/post/my-posts`, {
+export const getMyPosts = async (id) => {
+  const res = await fetch(`${apiUrl}/post/my-posts/${id}`, {
     method: "GET",
     credentials: "include",
   });
@@ -87,3 +87,19 @@ export const deletePost = async (id) => {
 
 //   return data;
 // };
+
+export const likePost = async(id)=>{
+  try{
+    const res = await fetch(`${apiUrl}/post/${id}/like`,{
+      method:'POST',
+      credentials:'include'
+    })
+    res = await res.json()
+    return res;
+
+  }
+  catch(error){
+    console.log(error.message);
+    
+  }
+}

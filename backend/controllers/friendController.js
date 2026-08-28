@@ -1,5 +1,6 @@
 import Friendship from "../models/freindship.js";
 import User from "../models/user.js";
+
 export const sendRequest = async (req, res) => {
   try {
     const { recipientId } = req.params;
@@ -131,14 +132,18 @@ export const acceptRequest = async (req, res) => {
     });
 
   } catch (error) {
-    return resp.status(500).json({
+    // FIX: was "resp" (undefined) — must use "res" (the actual param name).
+    // The old code threw a ReferenceError inside the catch block itself,
+    // which meant real errors never made it back to the client as a
+    // clean 500 response.
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
 
-export const rejectRequest = async (req, resp) => {
+export const rejectRequest = async (req, res) => {
   try {
     const { requestId } = req.params;
 
@@ -149,7 +154,7 @@ export const rejectRequest = async (req, resp) => {
     });
 
     if (!friendship) {
-      return resp.status(404).json({
+      return res.status(404).json({
         success: false,
         message: "Friend request not found",
       });
@@ -157,20 +162,20 @@ export const rejectRequest = async (req, resp) => {
 
     await Friendship.findByIdAndDelete(requestId);
 
-    return resp.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Friend request rejected",
     });
 
   } catch (error) {
-    return resp.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
 
-export const removeFriend = async (req, resp) => {
+export const removeFriend = async (req, res) => {
   try {
     const { friendId } = req.params;
     const userId = req.user._id;
@@ -190,7 +195,7 @@ export const removeFriend = async (req, resp) => {
     });
 
     if (!friendship) {
-      return resp.status(404).json({
+      return res.status(404).json({
         success: false,
         message: "Friend not found",
       });
@@ -198,13 +203,13 @@ export const removeFriend = async (req, resp) => {
 
     await Friendship.findByIdAndDelete(friendship._id);
 
-    return resp.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Friend removed successfully",
     });
 
   } catch (error) {
-    return resp.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -212,7 +217,7 @@ export const removeFriend = async (req, resp) => {
 };
 
 
-export const getIncomingRequests = async (req, resp) => {
+export const getIncomingRequests = async (req, res) => {
   try {
     const userId = req.user._id;
 
@@ -226,14 +231,14 @@ export const getIncomingRequests = async (req, resp) => {
       )
       .sort({ createdAt: -1 });
 
-    return resp.status(200).json({
+    return res.status(200).json({
       success: true,
       count: requests.length,
       requests,
     });
 
   } catch (error) {
-    return resp.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -241,7 +246,7 @@ export const getIncomingRequests = async (req, resp) => {
 };
 
 
-export const getSentRequests = async (req, resp) => {
+export const getSentRequests = async (req, res) => {
   try {
     const userId = req.user._id;
 
@@ -255,14 +260,14 @@ export const getSentRequests = async (req, resp) => {
       )
       .sort({ createdAt: -1 });
 
-    return resp.status(200).json({
+    return res.status(200).json({
       success: true,
       count: requests.length,
       requests,
     });
 
   } catch (error) {
-    return resp.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -270,9 +275,9 @@ export const getSentRequests = async (req, resp) => {
 };
 
 
-export const getFriends = async (req, resp) => {
+export const getFriends = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const {userId} =  req.params;
 
     const friendships = await Friendship.find({
       status: "accepted",
@@ -305,14 +310,14 @@ export const getFriends = async (req, resp) => {
       };
     });
 
-    return resp.status(200).json({
+    return res.status(200).json({
       success: true,
       count: friends.length,
       friends,
     });
 
   } catch (error) {
-    return resp.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -321,14 +326,14 @@ export const getFriends = async (req, resp) => {
 
 
 
-export const getFriendStatus = async (req, resp) => {
+export const getFriendStatus = async (req, res) => {
   try {
     const currentUserId = req.user._id;
     const { userId } = req.params;
 
     // Don't allow checking yourself
     if (currentUserId.toString() === userId.toString()) {
-      return resp.status(200).json({
+      return res.status(200).json({
         success: true,
         status: "self",
       });
@@ -349,7 +354,7 @@ export const getFriendStatus = async (req, resp) => {
 
     // No relationship
     if (!friendship) {
-      return resp.status(200).json({
+      return res.status(200).json({
         success: true,
         status: "none",
       });
@@ -357,17 +362,24 @@ export const getFriendStatus = async (req, resp) => {
 
     // Blocked
     if (friendship.status === "blocked") {
-      return resp.status(200).json({
+      return res.status(200).json({
         success: true,
         status: "blocked",
       });
     }
 
     // Already friends
+    // NOTE: this returns "accepted" (not "friends") so it matches the
+    // Friendship schema's own enum and whatever your PostCard/frontend
+    // checks against (friendStatus === "accepted"). If any other part
+    // of your codebase (e.g. a feed/post aggregation) attaches
+    // friendStatus using different strings like "friends" or
+    // "request_sent", the frontend button logic will silently break —
+    // keep these strings identical everywhere.
     if (friendship.status === "accepted") {
-      return resp.status(200).json({
+      return res.status(200).json({
         success: true,
-        status: "friends",
+        status: "accepted",
       });
     }
 
@@ -377,22 +389,21 @@ export const getFriendStatus = async (req, resp) => {
       const isSentByMe =
         friendship.requester.toString() === currentUserId.toString();
 
-      return resp.status(200).json({
+      return res.status(200).json({
         success: true,
-        status: isSentByMe
-          ? "request_sent"
-          : "request_received",
+        status: "pending",
+        direction: isSentByMe ? "sent" : "received",
         requestId: friendship._id,
       });
     }
 
-    return resp.status(200).json({
+    return res.status(200).json({
       success: true,
       status: "none",
     });
 
   } catch (error) {
-    return resp.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

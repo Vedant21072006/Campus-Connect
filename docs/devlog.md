@@ -130,3 +130,12 @@ Start planning the project.
 # Day -12
 - friendship api's created
 - frienedship tools frontend designed 
+
+# Day -13
+- Friend request notification 
+
+# Day-14 - 17
+- View Profile 
+- Bugs and issues 
+
+# Day -18 

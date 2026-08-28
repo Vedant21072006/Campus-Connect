@@ -6,7 +6,7 @@ import upload from '../middleware/uploadMiddleware.js';
 const router = express.Router()
 
 router.put('/complete-onboarding',protect,completeOnboarding)
-router.get('/my-profile',protect,getMyProfile)
+router.get('/my-profile/:userId',protect,getMyProfile)
 router.patch('/profile-picture',protect,upload.single("profilePicture"),updateProfilePicture)
 router.patch('/cover-picture',protect,upload.single("coverPicture"),updateCoverPicture)
 

@@ -13,43 +13,98 @@ import {
   UserMinus,
 } from "lucide-react";
 
+import { removeFriend, sendRequest } from "../../services/friendshipApi.js";
+import { likePost } from "../../services/postApi.js";
+import { useNavigate } from "react-router-dom";
+
 export default function PostCard({ post }) {
+  const navigate = useNavigate()
   const {
+    _id,
     authorSnapshot,
     metadata,
     postType,
     stats,
+    author,
+    isOwnPost,
   } = post;
 
-  const username = authorSnapshot?.username || "Unknown User";
+  // =====================================================
+  // AUTHOR DATA
+  // =====================================================
+
+  const username =
+    authorSnapshot?.username || "Unknown User";
 
   const college = authorSnapshot?.college;
 
   const meta = [
-    college?.year ? `${college.year} year` : null,
+    college?.year
+      ? `${college.year} year`
+      : null,
     college?.course || null,
     college?.branch || null,
   ]
     .filter(Boolean)
     .join(" • ");
 
+  // =====================================================
+  // POST DATA
+  // =====================================================
+
   const title = metadata?.title || "";
   const description = metadata?.description || "";
   const media = metadata?.media || [];
 
-  const likes = stats?.likes || 0;
   const comments = stats?.comments || 0;
   const shares = stats?.shares || 0;
 
-  const [isFollowing, setIsFollowing] = useState(
-    post?.isFollowing || false
+  // =====================================================
+  // FRIENDSHIP
+  // =====================================================
+
+  const [friendStatus, setFriendStatus] = useState(
+    post?.friendStatus || "none"
   );
 
+  // Keep local friendStatus in sync whenever the parent
+  // passes down a fresh post object (e.g. after a refetch
+  // triggered by accepting a request elsewhere).
+  useEffect(() => {
+    setFriendStatus(post?.friendStatus || "none");
+  }, [post?.friendStatus]);
+
+  // =====================================================
+  // LIKE STATE
+  // =====================================================
+
+  const [isLiked, setIsLiked] = useState(
+    post?.isLiked || false
+  );
+
+  const [likeCount, setLikeCount] = useState(
+    post?.stats?.likes || 0
+  );
+
+  const [liking, setLiking] = useState(false);
+
+  // =====================================================
+  // MENU
+  // =====================================================
+
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // =====================================================
+  // IMAGE CAROUSEL
+  // =====================================================
 
   const scrollerRef = useRef(null);
 
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // =====================================================
+  // IMAGE SCROLL
+  // =====================================================
 
   const scrollToIndex = (index) => {
     const el = scrollerRef.current;
@@ -81,10 +136,111 @@ export default function PostCard({ post }) {
     setActiveIndex(index);
   };
 
-  const handleFollow = () => {
-    // Connect follow API here later
-    setIsFollowing((prev) => !prev);
+  // =====================================================
+  // SEND FRIEND REQUEST
+  // =====================================================
+
+  const handleFollow = async (recipientId) => {
+    try {
+      const data = await sendRequest(recipientId);
+
+      if (data.success) {
+        setFriendStatus("pending");
+      } else {
+        console.error("Follow failed:", data?.message);
+      }
+    } catch (error) {
+      console.error(
+        "Friend request error:",
+        error
+      );
+    }
   };
+
+  // =====================================================
+  // UNFRIEND
+  // =====================================================
+
+  const handleUnfriend = async () => {
+    try {
+      const data = await removeFriend(author?._id);
+
+      if (data?.success) {
+        // Backend confirmed removal → update UI
+        setFriendStatus("none");
+      } else {
+        // Backend responded but didn't succeed (e.g. friendship
+        // not found) — log it instead of silently updating UI
+        console.error("Unfriend failed:", data?.message);
+      }
+    } catch (error) {
+      // Request threw (network error, 404, 500, etc.) — don't
+      // touch friendStatus, since we don't know the real state
+      console.error("Unfriend error:", error);
+    } finally {
+      setMenuOpen(false);
+    }
+  };
+
+  // =====================================================
+  // LIKE POST
+  // =====================================================
+
+  const handleLike = async () => {
+    // Prevent multiple clicks while request is running
+    if (liking) return;
+
+    // Save previous state in case API fails
+    const previousLiked = isLiked;
+    const previousCount = likeCount;
+
+    // =================================================
+    // OPTIMISTIC UI
+    // =================================================
+
+    setIsLiked(!previousLiked);
+
+    setLikeCount(
+      previousLiked
+        ? previousCount - 1
+        : previousCount + 1
+    );
+
+    try {
+      setLiking(true);
+
+      const data = await likePost(_id);
+
+      // =================================================
+      // USE BACKEND AS FINAL SOURCE OF TRUTH
+      // =================================================
+
+      if (data.success) {
+        setIsLiked(data.isLiked);
+
+        setLikeCount(data.likes);
+      }
+    } catch (error) {
+      console.error(
+        "Like error:",
+        error
+      );
+
+      // =================================================
+      // ROLLBACK UI IF API FAILS
+      // =================================================
+
+      setIsLiked(previousLiked);
+
+      setLikeCount(previousCount);
+    } finally {
+      setLiking(false);
+    }
+  };
+
+  // =====================================================
+  // CLOSE MENU WHEN CLICKING OUTSIDE
+  // =====================================================
 
   useEffect(() => {
     const handleOutsideClick = () => {
@@ -106,20 +262,39 @@ export default function PostCard({ post }) {
     };
   }, [menuOpen]);
 
+  // =====================================================
+  // UI
+  // =====================================================
+
   return (
     <div className="bg-white border-[2.5px] border-black rounded-2xl shadow-hard-sm p-4">
 
-      {/* ================= AUTHOR ================= */}
+      {/* ================================================= */}
+      {/* AUTHOR                                           */}
+      {/* ================================================= */}
 
       <div className="flex items-start gap-3 mb-4">
 
-        {/* Avatar */}
-        <div className="w-10 h-10 shrink-0 rounded-full bg-[#FACC15] border-2 border-black flex items-center justify-center font-bold">
-          {username?.[0]?.toUpperCase() || "U"}
+        {/* AVATAR */}
+
+        <div className="w-10 h-10 shrink-0 rounded-full bg-[#FACC15] border-2 border-black flex items-center justify-center font-bold overflow-hidden">
+
+          {author?.profilePicture?.url ? (
+            <img
+              src={author.profilePicture.url}
+              alt={username}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            username?.[0]?.toUpperCase() || "U"
+          )}
+
         </div>
 
-        {/* Author Details */}
+        {/* AUTHOR DETAILS */}
+
         <div className="min-w-0">
+
           <p className="font-bold text-sm truncate">
             {username}
           </p>
@@ -127,37 +302,112 @@ export default function PostCard({ post }) {
           <p className="text-xs text-[#6B7280] truncate">
             {meta || "CampusConnect"}
           </p>
+
         </div>
 
-        {/* Follow */}
-        <button
-          onClick={handleFollow}
-          className={`
-            ml-auto
-            shrink-0
-            text-[11px]
-            font-bold
-            px-2.5
-            py-1
-            rounded-full
-            border-2
-            border-black
-            transition-all
-            ${
-              isFollowing
-                ? "bg-white text-black"
-                : "bg-[#FFD93D] text-black shadow-[2px_2px_0px_#000] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
-            }
-          `}
-        >
-          {isFollowing ? "Following" : "Follow +"}
-        </button>
+        {/* ================================================= */}
+        {/* FRIENDSHIP BUTTON                                 */}
+        {/* ================================================= */}
 
-        {/* More */}
+        <div className="ml-auto shrink-0 w-[82px]">
+
+          {/* FOLLOW */}
+
+          {!isOwnPost &&
+            friendStatus === "none" && (
+              <button
+                onClick={() =>
+                  handleFollow(author?._id)
+                }
+                className="
+                  w-full
+                  text-[11px]
+                  font-bold
+                  px-2.5
+                  py-1
+                  rounded-full
+                  border-2
+                  border-black
+                  bg-[#FFD93D]
+                  text-black
+                  shadow-[2px_2px_0px_#000]
+                  hover:translate-x-[1px]
+                  hover:translate-y-[1px]
+                  hover:shadow-none
+                  transition-all
+                "
+              >
+                Follow +
+              </button>
+            )}
+
+          {/* PENDING */}
+
+          {!isOwnPost &&
+            friendStatus === "pending" && (
+              <span
+                className="
+                  block
+                  w-full
+                  text-center
+                  text-[11px]
+                  font-bold
+                  px-2.5
+                  py-1
+                  rounded-full
+                  border-2
+                  border-black
+                  bg-white
+                  text-black
+                "
+              >
+                Pending
+              </span>
+            )}
+
+          {/* FRIENDS */}
+
+          {!isOwnPost &&
+            friendStatus === "accepted" && (
+              <span
+                className="
+                  block
+                  w-full
+                  text-center
+                  text-[11px]
+                  font-bold
+                  px-2.5
+                  py-1
+                  rounded-full
+                  border-2
+                  border-black
+                  bg-[#86EFAC]
+                  text-black
+                "
+              >
+                Friends ✓
+              </span>
+            )}
+
+          {/* OWN POST */}
+
+          {isOwnPost && (
+            <div className="w-full h-[28px]" />
+          )}
+
+        </div>
+
+        {/* ================================================= */}
+        {/* MORE MENU                                         */}
+        {/* ================================================= */}
+
         <div
           className="relative shrink-0"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) =>
+            e.stopPropagation()
+          }
         >
+
           <button
             onClick={() =>
               setMenuOpen((prev) => !prev)
@@ -168,82 +418,130 @@ export default function PostCard({ post }) {
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-7 z-50 w-44 bg-white border-2 border-black rounded-xl shadow-[3px_3px_0px_#000] overflow-hidden">
+            <div
+              className="
+                absolute
+                right-0
+                top-7
+                z-50
+                w-44
+                bg-white
+                border-2
+                border-black
+                rounded-xl
+                shadow-[3px_3px_0px_#000]
+                overflow-hidden
+              "
+            >
+
+              {/* REPORT */}
 
               <button
                 onClick={() => {
-                  console.log("Report post");
-                  setMenuOpen(false);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold hover:bg-[#FEE2E2]"
-              >
-                <Flag size={14} />
-                Report post
-              </button>
-
-              <button
-                onClick={() => {
-                  console.log("Not interested");
-                  setMenuOpen(false);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold hover:bg-[#F3F4F6]"
-              >
-                <EyeOff size={14} />
-                Not interested
-              </button>
-
-              <button
-                onClick={() => {
-                  navigator.clipboard?.writeText(
-                    window.location.href
+                  console.log(
+                    "Report post"
                   );
 
                   setMenuOpen(false);
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold hover:bg-[#F3F4F6]"
+                className="
+                  w-full
+                  flex
+                  items-center
+                  gap-2
+                  px-3
+                  py-2.5
+                  text-xs
+                  font-semibold
+                  hover:bg-[#FEE2E2]
+                "
               >
-                <Link size={14} />
-                Copy link
+                <Flag size={14} />
+
+                Report post
               </button>
 
-              {isFollowing && (
-                <button
-                  onClick={() => {
-                    setIsFollowing(false);
-                    setMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold hover:bg-[#F3F4F6]"
-                >
-                  <UserMinus size={14} />
-                  Unfollow
-                </button>
-              )}
+              {/* NOT INTERESTED */}
 
               <button
                 onClick={() => {
-                  console.log("Hide post");
+                  navigate(`/profile/${author?._id}`)
+                          console.log('Post through id',author?._id);
+                          
                   setMenuOpen(false);
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-semibold hover:bg-[#F3F4F6]"
+                className="
+                  w-full
+                  flex
+                  items-center
+                  gap-2
+                  px-3
+                  py-2.5
+                  text-xs
+                  font-semibold
+                  hover:bg-[#F3F4F6]
+                "
               >
                 <EyeOff size={14} />
-                Hide post
+
+                View Profile
               </button>
+
+              {/* UNFOLLOW */}
+
+              {friendStatus === "accepted" && (
+                <button
+                  onClick={() => handleUnfriend()}
+                  className="
+                    w-full
+                    flex
+                    items-center
+                    gap-2
+                    px-3
+                    py-2.5
+                    text-xs
+                    font-semibold
+                    hover:bg-[#F3F4F6]
+                  "
+                >
+                  <UserMinus size={14} />
+
+                  Unfriend
+                </button>
+              )}
 
             </div>
           )}
+
         </div>
+
       </div>
 
-      {/* ================= POST TYPE ================= */}
+      {/* ================================================= */}
+      {/* POST TYPE                                        */}
+      {/* ================================================= */}
 
       {postType && (
-        <span className="inline-block mb-2 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#92400E]">
+        <span
+          className="
+            inline-block
+            mb-2
+            text-[10px]
+            font-semibold
+            px-2.5
+            py-1
+            rounded-full
+            bg-[#FEF3C7]
+            text-[#92400E]
+          "
+        >
           {postType}
         </span>
       )}
 
-      {/* ================= TITLE ================= */}
+      {/* ================================================= */}
+      {/* TITLE                                            */}
+      {/* ================================================= */}
 
       {title && (
         <p className="font-semibold text-sm mb-1">
@@ -251,7 +549,9 @@ export default function PostCard({ post }) {
         </p>
       )}
 
-      {/* ================= DESCRIPTION ================= */}
+      {/* ================================================= */}
+      {/* DESCRIPTION                                      */}
+      {/* ================================================= */}
 
       {description && (
         <p className="text-sm text-[#6B7280] leading-relaxed mb-3">
@@ -260,13 +560,31 @@ export default function PostCard({ post }) {
       )}
 
       {/* ================================================= */}
-      {/* SINGLE IMAGE                                      */}
+      {/* SINGLE IMAGE                                     */}
       {/* ================================================= */}
 
       {media.length === 1 && (
-        <div className="w-full rounded-xl border-2 border-black overflow-hidden bg-[#F3F4F6] mb-3">
+        <div
+          className="
+            w-full
+            rounded-xl
+            border-2
+            border-black
+            overflow-hidden
+            bg-[#F3F4F6]
+            mb-3
+          "
+        >
 
-          <div className="w-full max-h-[330px] flex items-center justify-center">
+          <div
+            className="
+              w-full
+              max-h-[330px]
+              flex
+              items-center
+              justify-center
+            "
+          >
 
             <img
               src={media[0].url}
@@ -287,7 +605,7 @@ export default function PostCard({ post }) {
       )}
 
       {/* ================================================= */}
-      {/* MULTIPLE IMAGES                                   */}
+      {/* MULTIPLE IMAGES                                  */}
       {/* ================================================= */}
 
       {media.length > 1 && (
@@ -312,7 +630,9 @@ export default function PostCard({ post }) {
 
             {media.map((item, index) => (
               <div
-                key={item.publicId || index}
+                key={
+                  item.publicId || index
+                }
                 className="
                   w-full
                   shrink-0
@@ -327,7 +647,8 @@ export default function PostCard({ post }) {
 
                 <img
                   src={item.url}
-                  alt={`Post media ${index + 1}`}
+                  alt={`Post media ${index + 1
+                    }`}
                   className="
                     block
                     max-w-full
@@ -343,12 +664,14 @@ export default function PostCard({ post }) {
 
           </div>
 
-          {/* Previous */}
+          {/* PREVIOUS */}
 
           {activeIndex > 0 && (
             <button
               onClick={() =>
-                scrollToIndex(activeIndex - 1)
+                scrollToIndex(
+                  activeIndex - 1
+                )
               }
               className="
                 hidden
@@ -375,14 +698,17 @@ export default function PostCard({ post }) {
             </button>
           )}
 
-          {/* Next */}
+          {/* NEXT */}
 
-          {activeIndex < media.length - 1 && (
-            <button
-              onClick={() =>
-                scrollToIndex(activeIndex + 1)
-              }
-              className="
+          {activeIndex <
+            media.length - 1 && (
+              <button
+                onClick={() =>
+                  scrollToIndex(
+                    activeIndex + 1
+                  )
+                }
+                className="
                 hidden
                 sm:flex
                 absolute
@@ -402,57 +728,138 @@ export default function PostCard({ post }) {
                 group-hover:opacity-100
                 transition-opacity
               "
-            >
-              <ChevronRight size={16} />
-            </button>
-          )}
+              >
+                <ChevronRight size={16} />
+              </button>
+            )}
 
-          {/* Image Counter */}
+          {/* IMAGE COUNTER */}
 
-          <span className="
-            absolute
-            top-2
-            right-2
-            bg-black/70
-            text-white
-            text-[10px]
-            font-semibold
-            px-2
-            py-0.5
-            rounded-full
-          ">
-            {activeIndex + 1}/{media.length}
+          <span
+            className="
+              absolute
+              top-2
+              right-2
+              bg-black/70
+              text-white
+              text-[10px]
+              font-semibold
+              px-2
+              py-0.5
+              rounded-full
+            "
+          >
+            {activeIndex + 1}/
+            {media.length}
           </span>
 
         </div>
       )}
 
-      {/* ================= STATS ================= */}
+      {/* ================================================= */}
+      {/* STATS                                            */}
+      {/* ================================================= */}
 
       <div className="flex items-center gap-5 text-[#6B7280] text-xs">
 
-        <button className="flex items-center gap-1.5 hover:text-[#EF4444] transition">
+        {/* ================================================= */}
+        {/* LIKE                                             */}
+        {/* ================================================= */}
+
+        <button
+          type="button"
+          onClick={handleLike}
+          disabled={liking}
+          className="
+            flex
+            items-center
+            gap-1.5
+            transition
+            hover:text-[#EF4444]
+            disabled:opacity-60
+          "
+        >
+
           <Heart
             size={16}
-            className="text-[#EF4444]"
+            className={
+              isLiked
+                ? "text-[#EF4444]"
+                : "text-[#6B7280]"
+            }
+            fill={
+              isLiked
+                ? "currentColor"
+                : "none"
+            }
           />
-          {likes}
+
+          <span>
+            {likeCount}
+          </span>
+
         </button>
 
-        <button className="flex items-center gap-1.5 hover:text-black transition">
+        {/* ================================================= */}
+        {/* COMMENTS                                         */}
+        {/* ================================================= */}
+
+        <button
+          type="button"
+          className="
+            flex
+            items-center
+            gap-1.5
+            hover:text-black
+            transition
+          "
+        >
+
           <MessageCircle size={16} />
+
           {comments}
+
         </button>
+
+        {/* ================================================= */}
+        {/* SHARES                                           */}
+        {/* ================================================= */}
 
         {shares > 0 && (
-          <button className="flex items-center gap-1.5 hover:text-black transition">
+          <button
+            type="button"
+            className="
+              flex
+              items-center
+              gap-1.5
+              hover:text-black
+              transition
+            "
+          >
+
             <Share2 size={16} />
+
             {shares}
+
           </button>
         )}
 
-        <button className="ml-auto text-[#9CA3AF] hover:text-black transition">
+        {/* ================================================= */}
+        {/* BOOKMARK                                         */}
+        {/* ================================================= */}
+
+        <button
+          type="button"
+          className="
+            ml-auto
+            text-[#9CA3AF]
+            hover:text-black
+            transition
+          "
+        >
+
           <Bookmark size={16} />
+
         </button>
 
       </div>

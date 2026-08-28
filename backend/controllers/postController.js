@@ -3,6 +3,8 @@ import Post from "../models/post.js";
 import { success } from "zod";
 import User from "../models/user.js";
 import cloudinary from "../config/cloudinary.js";
+import Friendship from '../models/freindship.js'
+import PostLike from "../models/postLike.js";
 
 export const createPost = async (req, res) => {
   try {
@@ -56,9 +58,10 @@ export const createPost = async (req, res) => {
 
     const post = await Post.create({
       author: authorDetails._id,
-
+ 
       authorSnapshot: {
         username,
+        authorId:authorDetails._id,
         college: {
           year: college?.year,
           course: college?.course,
@@ -75,6 +78,7 @@ export const createPost = async (req, res) => {
 
       postType,
       visibility,
+      isOwnPost:true
     });
 
     return res.status(201).json({
@@ -93,17 +97,146 @@ export const createPost = async (req, res) => {
 
 export const getPosts = async (req, res) => {
   try {
+    const currentUserId = req.user._id;
+
+    // ==========================================
+    // 1. GET LATEST POSTS
+    // ==========================================
+
     const postdata = await Post.find()
       .sort({ createdAt: -1 })
-      .limit(10);
+      .limit(10)
+      .populate(
+        "author",
+        "firstName lastName username profilePicture role"
+      )
+      .lean();
 
+    // ==========================================
+    // 2. GET UNIQUE AUTHORS FROM THESE POSTS
+    // ==========================================
+
+    const authorIds = [
+      ...new Set(
+        postdata
+          .map((post) => post.author?._id?.toString())
+          .filter(Boolean)
+      ),
+    ];
+
+    // ==========================================
+    // 3. GET FRIENDSHIPS WITH THESE AUTHORS
+    // ==========================================
+
+    const friendships = await Friendship.find({
+      $or: [
+        {
+          requester: currentUserId,
+          recipient: { $in: authorIds },
+        },
+        {
+          requester: { $in: authorIds },
+          recipient: currentUserId,
+        },
+      ],
+    }).lean();
+
+    // ==========================================
+    // 4. CREATE RELATIONSHIP MAP
+    // ==========================================
+
+    const relationshipMap = new Map();
+
+    friendships.forEach((friendship) => {
+      const requesterId =
+        friendship.requester.toString();
+
+      const recipientId =
+        friendship.recipient.toString();
+
+      const currentUser =
+        currentUserId.toString();
+
+      const otherUserId =
+        requesterId === currentUser
+          ? recipientId
+          : requesterId;
+
+      relationshipMap.set(otherUserId, {
+        status: friendship.status,
+
+        direction:
+          requesterId === currentUser
+            ? "sent"
+            : "received",
+      });
+    });
+
+    // ==========================================
+    // 5. GET CURRENT USER'S LIKES
+    // ==========================================
+
+    const postIds = postdata.map(
+      (post) => post._id
+    );
+
+    const likes = await PostLike.find({
+      user: currentUserId,
+      post: { $in: postIds },
+    })
+      .select("post")
+      .lean();
+
+    // ==========================================
+    // 6. CREATE LIKED POST MAP
+    // ==========================================
+
+    const likedPostIds = new Set(
+      likes.map((like) =>
+        like.post.toString()
+      )
+    );
+
+    // ==========================================
+    // 7. ADD RELATIONSHIP + LIKE DATA
+    // ==========================================
+
+    const postsWithData = postdata.map((post) => {
+      const authorId =
+        post.author?._id?.toString();
+
+      const relationship =
+        relationshipMap.get(authorId);
+
+      return {
+        ...post,
+
+        // Friendship
+        friendStatus:
+          relationship?.status || "none",
+
+        friendRequestDirection:
+          relationship?.direction || null,
+
+        // Like
+        isLiked: likedPostIds.has(
+          post._id.toString()
+        ),
+      };
+    });
+
+    // ==========================================
+    // 8. SEND RESPONSE
+    // ==========================================
 
     return res.status(200).json({
       success: true,
-      postdata
-
+      postdata: postsWithData,
     });
+
   } catch (error) {
+    console.error("Get posts error:", error);
+
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -149,8 +282,9 @@ export const deletePost = async (req, res) => {
 
 export const myPosts = async (req, resp) => {
   try {
+    const {id} = req.params
     const posts = await Post.find({
-      author: req.user._id
+      author: id
     }).sort({ createdAt: -1 })
 
     return resp.status(201).json({
@@ -165,3 +299,108 @@ export const myPosts = async (req, resp) => {
     })
   }
 }
+
+export const likePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user._id;
+
+    // Check post exists
+    const post = await Post.findById(postId);
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    // Check if already liked
+    const existingLike = await PostLike.findOne({
+      post: postId,
+      user: userId,
+    });
+
+    if (existingLike) {
+      return res.status(400).json({
+        success: false,
+        message: "Post already liked",
+        isLiked: true,
+      });
+    }
+
+    // Create like
+    await PostLike.create({
+      post: postId,
+      user: userId,
+    });
+
+    // Increase count
+    post.stats.likes += 1;
+    await post.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Post liked",
+      isLiked: true,
+      likes: post.stats.likes,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const unlikePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user._id;
+
+    const like = await PostLike.findOneAndDelete({
+      post: postId,
+      user: userId,
+    });
+
+    if (!like) {
+      return res.status(404).json({
+        success: false,
+        message: "Like not found",
+      });
+    }
+
+    const post = await Post.findByIdAndUpdate(
+      postId,
+      {
+        $inc: {
+          "stats.likes": -1,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Post unliked",
+      isLiked: false,
+      likes: post.stats.likes,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

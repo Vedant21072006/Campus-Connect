@@ -10,6 +10,10 @@ const postSchema = new mongoose.Schema(
     },
     
     authorSnapshot: {
+      authorId:{
+         type:String,
+         required:true
+      },
       username: {
         type: String,
         required: true,
@@ -115,6 +119,10 @@ const postSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isOwnPost:{
+      type:Boolean,
+      default:false
+    }
   },
   {
     timestamps: true,
