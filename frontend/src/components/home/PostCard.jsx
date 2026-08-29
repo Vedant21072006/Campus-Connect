@@ -818,47 +818,7 @@ export default function PostCard({ post }) {
 <MessageCircle size={16} /> 
 
 </button>
-        {/* ================================================= */}
-        {/* SHARES                                           */}
-        {/* ================================================= */}
-
-        {shares > 0 && (
-          <button
-            type="button"
-            className="
-              flex
-              items-center
-              gap-1.5
-              hover:text-black
-              transition
-            "
-          >
-
-            <Share2 size={16} />
-
-            {shares}
-
-          </button>
-        )}
-
-        {/* ================================================= */}
-        {/* BOOKMARK                                         */}
-        {/* ================================================= */}
-
-        <button
-          type="button"
-          className="
-            ml-auto
-            text-[#9CA3AF]
-            hover:text-black
-            transition
-          "
-        >
-
-          <Bookmark size={16} />
-
-        </button>
-
+    
       </div>
       {showComments && (
   <CommentBox

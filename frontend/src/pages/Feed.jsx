@@ -21,6 +21,7 @@ import {
   streakDays,
 } from "../data/mockFeedData.js";
 import { getPosts } from "../services/getpost.js";
+import HomeSearchBar from "../components/home/homesearchbar.jsx";
 
 export default function Feed() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -112,12 +113,7 @@ export default function Feed() {
             )}
 
             {activeView === "search" && (
-              <ComingSoon
-                icon={SearchIcon}
-                title="Search"
-                description="Search for people, communities, and posts is on its way."
-                onBack={() => setActiveView("feed")}
-              />
+               <HomeSearchBar/>
             )}
 
             {activeView === "chats" && (
