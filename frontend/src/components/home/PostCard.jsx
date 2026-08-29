@@ -16,6 +16,7 @@ import {
 import { removeFriend, sendRequest } from "../../services/friendshipApi.js";
 import { likePost } from "../../services/postApi.js";
 import { useNavigate } from "react-router-dom";
+import CommentBox from "./commentbox.jsx";
 
 export default function PostCard({ post }) {
   const navigate = useNavigate()
@@ -101,6 +102,11 @@ export default function PostCard({ post }) {
   const scrollerRef = useRef(null);
 
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // =====================================================
+  // COMMENT BOX
+  // =====================================================
+  const [showComments, setShowComments] = useState(false);
 
   // =====================================================
   // IMAGE SCROLL
@@ -804,23 +810,14 @@ export default function PostCard({ post }) {
         {/* COMMENTS                                         */}
         {/* ================================================= */}
 
-        <button
-          type="button"
-          className="
-            flex
-            items-center
-            gap-1.5
-            hover:text-black
-            transition
-          "
-        >
+   <button
+  type="button"
+  onClick={() => setShowComments(true)}
+  className="flex items-center gap-1.5 hover:text-black transition"
+> 
+<MessageCircle size={16} /> 
 
-          <MessageCircle size={16} />
-
-          {comments}
-
-        </button>
-
+</button>
         {/* ================================================= */}
         {/* SHARES                                           */}
         {/* ================================================= */}
@@ -863,6 +860,14 @@ export default function PostCard({ post }) {
         </button>
 
       </div>
+      {showComments && (
+  <CommentBox
+    postId={_id}
+    postAuthorId={author?._id}
+    currentUserId={author?._id} // Replace with the actual current user ID
+    onClose={() => setShowComments(false)}
+  />
+)}
 
     </div>
   );

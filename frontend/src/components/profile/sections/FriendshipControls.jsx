@@ -7,25 +7,37 @@ import {
   Flag,
   UserX,
   MessageCircle,
+  X,
 } from 'lucide-react'
 
-import { removeFriend,  reportUser, getFriendshipStatus, sendRequest} from '../../../services/friendshipApi.js'
+import {
+  removeFriend,
+  reportUser,
+  getFriendshipStatus,
+  sendRequest,
+  cancelRequest,
+  acceptRequest,
+  rejectRequest,
+} from '../../../services/friendshipApi.js'
 
-// status: 'none' | 'pending' | 'friends'
+// status: 'none' | 'pending_sent' | 'pending_received' | 'friends' | 'blocked' | 'self'
 export default function FriendshipControls({
   targetUserId,
   initialStatus = 'none',
+  requestId: initialRequestId,
   onChat,
   onStatusChange,
 }) {
   const [status, setStatus] = useState(initialStatus)
+  const [requestId, setRequestId] = useState(initialRequestId)
   const [loading, setLoading] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
   const menuRef = useRef(null)
 
-  const updateStatus = (next) => {
+  const updateStatus = (next, nextRequestId = null) => {
     setStatus(next)
+    setRequestId(nextRequestId)
     onStatusChange?.(next)
   }
 
@@ -44,20 +56,23 @@ export default function FriendshipControls({
   }, [])
 
   // -----------------------------------
-  // While a request is pending, poll for
-  // the other person accepting/rejecting.
+  // While a request is pending (either direction), poll for
+  // the other person accepting/rejecting/canceling.
   // Swap this for a socket event if you have one.
   // -----------------------------------
 
   useEffect(() => {
-    if (status !== 'pending' || !targetUserId) return
+    if (
+      (status !== 'pending_sent' && status !== 'pending_received') ||
+      !targetUserId
+    )
+      return
 
     const interval = setInterval(async () => {
       try {
         const result = await getFriendshipStatus(targetUserId)
-        // Rejected requests should come back from your API as 'none'
-        if (result?.status && result.status !== 'pending') {
-          updateStatus(result.status)
+        if (result?.status && result.status !== status) {
+          updateStatus(result.status, result.requestId ?? null)
         }
       } catch (error) {
         console.error('Friendship status check failed:', error)
@@ -68,25 +83,58 @@ export default function FriendshipControls({
   }, [status, targetUserId])
 
   // -----------------------------------
-  // TOGGLE BUTTON
+  // TOGGLE BUTTON (none <-> pending_sent, or friends = no-op)
   // -----------------------------------
 
   const handleToggleClick = async () => {
-    if (loading || status === 'friends') return
+    if (loading || status === 'friends' || status === 'pending_received')
+      return
 
     try {
       setLoading(true)
 
       if (status === 'none') {
         await sendRequest(targetUserId)
-        updateStatus('pending')
-      } else if (status === 'pending') {
-        await removeFriend(targetUserId)
+        updateStatus('pending_sent')
+      } else if (status === 'pending_sent') {
+        await cancelRequest(targetUserId)
         updateStatus('none')
       }
     } catch (error) {
       console.error('Friendship action failed:', error)
       alert(error.message || 'Something went wrong')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // -----------------------------------
+  // INCOMING REQUEST ACTIONS
+  // -----------------------------------
+
+  const handleAccept = async () => {
+    if (loading) return
+    try {
+      setLoading(true)
+      await acceptRequest(targetUserId)
+      updateStatus('friends')
+    } catch (error) {
+      console.error('Accept failed:', error)
+      alert(error.message || 'Could not accept request')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDecline = async () => {
+    if (loading || !requestId) return
+    try {
+      setLoading(true)
+      await rejectRequest(requestId)
+      updateStatus('none')
+    } catch (error) {
+      console.error('Decline failed:', error)
+      alert(error.message || 'Could not decline request')
     } finally {
       setLoading(false)
     }
@@ -135,13 +183,41 @@ export default function FriendshipControls({
   // RENDER
   // -----------------------------------
 
+  if (status === 'self' || status === 'blocked') return null
+
+  // Incoming request: show Accept / Decline instead of the toggle
+  if (status === 'pending_received') {
+    return (
+      <div className="flex items-center gap-2 mb-1">
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleAccept}
+          className="font-display font-semibold text-xs sm:text-sm flex items-center gap-1.5 bg-lime rotate-1 border-[3px] border-ink px-3 sm:px-4 py-2 rounded-xl shadow-hard hover:rotate-0 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-70 disabled:cursor-default"
+        >
+          {loading ? <span className="text-xs font-bold">...</span> : <><Check size={14} />Accept</>}
+        </button>
+
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleDecline}
+          className="bg-white border-[3px] border-ink p-2.5 rounded-xl shadow-hard-sm -rotate-2 hover:rotate-0 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all disabled:opacity-70"
+          aria-label="Decline request"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    )
+  }
+
   const toggleConfig = {
     none: {
       label: 'Add Friend',
       icon: <UserPlus size={14} />,
       className: 'bg-bubblegum rotate-1',
     },
-    pending: {
+    pending_sent: {
       label: 'Pending',
       icon: <Clock size={14} />,
       className: 'bg-sunny -rotate-1',

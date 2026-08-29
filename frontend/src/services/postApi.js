@@ -103,3 +103,39 @@ export const likePost = async(id)=>{
     
   }
 }
+
+
+
+const BASE = `${import.meta.env.VITE_API_URL}/post`
+
+export const getComments = async (postId) => {
+  const response = await fetch(`${BASE}/get-comments/${postId}`, {
+    method: "GET",
+    credentials: "include",
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.message || "Failed to load comments")
+  return data
+}
+
+export const createComment = async (postId, content) => {
+  const response = await fetch(`${BASE}/${postId}/create-comment`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.message || "Failed to post comment")
+  return data
+}
+
+export const deleteComment = async (commentId) => {
+  const response = await fetch(`${BASE}/delete-comment/${commentId}`, {
+    method: "DELETE",
+    credentials: "include",
+  })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.message || "Failed to delete comment")
+  return data
+}

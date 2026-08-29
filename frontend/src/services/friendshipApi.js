@@ -29,6 +29,20 @@ export const rejectFriendRequest = (requestId) =>
     credentials: 'include',
   }).then(handle)
 
+// NEW — was missing entirely. FriendshipControls calls this when you
+// cancel a request YOU sent (rejectFriendRequest only works for the
+// recipient of a request, per the backend's rejectRequest controller,
+// which filters on `recipient: req.user._id`).
+// Needs a matching backend route+controller, e.g.:
+//   router.patch('/request/:recipientId/cancel', protect, cancelRequest)
+// where cancelRequest deletes the Friendship doc matching
+// { requester: req.user._id, recipient: recipientId, status: 'pending' }.
+export const cancelFriendRequest = (recipientId) =>
+  fetch(`${BASE}/request/${recipientId}/cancel`, {
+    method: 'PATCH',
+    credentials: 'include',
+  }).then(handle)
+
 
 export const blockUser = (userId) =>
   fetch(`${BASE}/block/${userId}`, {
@@ -36,7 +50,7 @@ export const blockUser = (userId) =>
     credentials: 'include',
   }).then(handle)
 
-  
+
 export const sendRequest = async (recipientId) => {
   try {
     const response = await fetch(
@@ -107,19 +121,46 @@ export const removeFriend = async (friendId) => {
 };
 
 
+// FIX: was calling an undefined `request()` function — threw
+// ReferenceError on every call. Rewritten with `handle()` like
+// everything else in this file.
 export async function reportUser(userId, reason) {
-  return request(`/report/${userId}`, {
+  return fetch(`${BASE}/report/${userId}`, {
     method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ reason }),
-  })
+  }).then(handle)
 }
 
-// Poll/refetch the current relationship between the viewer and this profile.
-// Expected response shape: { status: 'none' | 'pending' | 'friends' }
+// FIX: previously did `const resp = ...` then reassigned `resp`,
+// which throws "Assignment to constant variable" on every call —
+// this was the actual reason friendship status never updated in
+// the UI. Also added error handling (previously none) and status
+// normalization, since the backend returns
+// { status: 'none'|'accepted'|'pending'|'blocked'|'self', direction?, requestId? }
+// but FriendshipControls expects
+// { status: 'none'|'friends'|'pending_sent'|'pending_received'|'blocked'|'self', requestId? }
 export async function getFriendshipStatus(userId) {
-   const resp = await fetch(`${BASE}/request/getFriendsStatus/${userId}`,{
-    credentials:'include'
-   })
-    resp = await resp.json()
-    return resp;
+  const data = await fetch(`${BASE}/request/getFriendsStatus/${userId}`, {
+    credentials: 'include',
+  }).then(handle)
+
+  if (data.status === 'accepted') return { status: 'friends' }
+
+  if (data.status === 'pending') {
+    return {
+      status: data.direction === 'sent' ? 'pending_sent' : 'pending_received',
+      requestId: data.requestId,
+    }
+  }
+
+  return { status: data.status } // 'none' | 'blocked' | 'self'
 }
+
+// Aliases so this lines up with what FriendshipControls.jsx imports,
+// without renaming the functions above (in case other files already
+// import acceptFriendRequest / rejectFriendRequest by their original names).
+export const acceptRequest = acceptFriendRequest
+export const rejectRequest = rejectFriendRequest
+export const cancelRequest = cancelFriendRequest

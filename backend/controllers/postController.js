@@ -5,6 +5,7 @@ import User from "../models/user.js";
 import cloudinary from "../config/cloudinary.js";
 import Friendship from '../models/freindship.js'
 import PostLike from "../models/postLike.js";
+import Comment from "../models/comments.js";
 
 export const createPost = async (req, res) => {
   try {
@@ -401,6 +402,118 @@ export const unlikePost = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+export const createComment = async (req, resp) => {
+  try {
+    const { postId } = req.params
+    const { content } = req.body
+    const userId = req.user._id
+
+    const post = await Post.findById(postId)
+
+    if (!post) {
+      return resp.status(404).json({
+        message: "Post not found",
+        success: false
+      })
+    }
+
+    let comment = await Comment.create({
+      post: postId,
+      author: userId,
+      content
+    })
+
+    // Get only the author information you need
+    comment = await comment.populate({
+      path: "author",
+      select: "username profilePicture"
+    })
+
+    return resp.status(201).json({
+      message: "Comment created",
+      success: true,
+      comment
+    })
+
+  } catch (error) {
+    return resp.status(500).json({
+      message: error.message,
+      success: false
+    })
+  }
+}
+
+export const getComments = async (req, resp) => {
+  try {
+    const { postId } = req.params
+
+    const post = await Post.findById(postId)  
+    if(!post) {
+      return resp.status(404).json({
+        message: "Post not found",
+        success: false
+      })
+    }
+    const comments = await Comment.find({ post: postId })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: "author", 
+        select: "username profilePicture"
+      })
+      
+    return resp.status(200).json({
+      message: "Comments fetched",
+      success: true,
+      comments
+    })  
+
+
+  }
+  catch (error) {
+    return resp.status(500).json({
+      message: error.message,
+      success: false
+    })
+  }
+}
+
+export const deleteComment = async (req, resp) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user._id;
+
+    const comment = await Comment.findById(commentId);
+
+    if (!comment) {
+      return resp.status(404).json({
+        message: "Comment not found",
+        success: false,
+      });
+    }
+
+    // Only comment author can delete
+    if (comment.author.toString() !== userId.toString()) {
+      return resp.status(403).json({
+        message: "You are not allowed to delete this comment",
+        success: false,
+      });
+    }
+
+    await Comment.findByIdAndDelete(commentId);
+
+    return resp.status(200).json({
+      message: "Comment deleted",
+      success: true,
+    });
+
+  } catch (error) {
+    return resp.status(500).json({
+      message: error.message,
+      success: false,
     });
   }
 };

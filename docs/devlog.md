@@ -139,3 +139,5 @@ Start planning the project.
 - Bugs and issues 
 
 # Day -18 
+- comments on post
+- desiging and implementation
