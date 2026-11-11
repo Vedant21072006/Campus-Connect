@@ -20,10 +20,7 @@ const collegeSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    branch: {
-      type: String,
-      trim: true,
-    },
+    
     course: {
       type: String,
       trim: true,
@@ -183,20 +180,7 @@ const academicProfileSchema = new mongoose.Schema(
       },
     ],
 
-    lookingFor: [
-      {
-        type: String,
-        enum: [
-          "friends",
-          "studyPartners",
-          "projectTeammates",
-          "hackathonTeam",
-          "internshipReferrals",
-          "mentorship",
-          "startupCofounders",
-        ],
-      },
-    ],
+  
   },
   { _id: false }
 );

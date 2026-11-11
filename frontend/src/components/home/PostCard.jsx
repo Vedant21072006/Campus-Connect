@@ -24,7 +24,8 @@ export default function PostCard({ post }) {
     _id,
     authorSnapshot,
     metadata,
-    postType,
+    hashtags,
+    visibility,
     stats,
     author,
     isOwnPost,
@@ -273,7 +274,28 @@ export default function PostCard({ post }) {
   // =====================================================
 
   return (
-    <div className="bg-white border-[2.5px] border-black rounded-2xl shadow-hard-sm p-4">
+    <div className="relative bg-white border-[2.5px] border-black rounded-2xl shadow-hard-sm p-4">
+
+      {/* VISIBILITY BADGE - TOP RIGHT */}
+      <span
+        className={`absolute top-4 right-14 z-10 text-[10px] font-semibold px-2 py-1 rounded-full border ${
+          visibility === "public"
+            ? "bg-green-100 text-green-800 border-green-300"
+            : visibility === "campus"
+            ? "bg-blue-100 text-blue-800 border-blue-300"
+            : visibility === "private"
+            ? "bg-gray-100 text-gray-700 border-gray-300"
+            : "bg-yellow-100 text-yellow-800 border-yellow-300"
+        }`}
+      >
+        {visibility === "public"
+          ? "🌐 Public"
+          : visibility === "campus"
+          ? "🎓 Campus"
+          : visibility === "private"
+          ? "🔒 Private"
+          : "👥 Friends"}
+      </span>
 
       {/* ================================================= */}
       {/* AUTHOR                                           */}
@@ -300,7 +322,6 @@ export default function PostCard({ post }) {
         {/* AUTHOR DETAILS */}
 
         <div className="min-w-0">
-
           <p className="font-bold text-sm truncate">
             {username}
           </p>
@@ -308,7 +329,6 @@ export default function PostCard({ post }) {
           <p className="text-xs text-[#6B7280] truncate">
             {meta || "CampusConnect"}
           </p>
-
         </div>
 
         {/* ================================================= */}
@@ -467,13 +487,13 @@ export default function PostCard({ post }) {
                 Report post
               </button>
 
-              {/* NOT INTERESTED */}
+              {/* VIEW PROFILE */}
 
               <button
                 onClick={() => {
                   navigate(`/profile/${author?._id}`)
-                          console.log('Post through id',author?._id);
-                          
+                  console.log('Post through id', author?._id);
+
                   setMenuOpen(false);
                 }}
                 className="
@@ -493,7 +513,7 @@ export default function PostCard({ post }) {
                 View Profile
               </button>
 
-              {/* UNFOLLOW */}
+              {/* UNFRIEND */}
 
               {friendStatus === "accepted" && (
                 <button
@@ -524,28 +544,6 @@ export default function PostCard({ post }) {
       </div>
 
       {/* ================================================= */}
-      {/* POST TYPE                                        */}
-      {/* ================================================= */}
-
-      {postType && (
-        <span
-          className="
-            inline-block
-            mb-2
-            text-[10px]
-            font-semibold
-            px-2.5
-            py-1
-            rounded-full
-            bg-[#FEF3C7]
-            text-[#92400E]
-          "
-        >
-          {postType}
-        </span>
-      )}
-
-      {/* ================================================= */}
       {/* TITLE                                            */}
       {/* ================================================= */}
 
@@ -563,6 +561,31 @@ export default function PostCard({ post }) {
         <p className="text-sm text-[#6B7280] leading-relaxed mb-3">
           {description}
         </p>
+      )}
+
+      {/* HASHTAGS */}
+
+      {Array.isArray(hashtags) && hashtags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {hashtags.map((tag, index) => (
+            <span
+              key={`${tag}-${index}`}
+              className="
+                inline-block
+                text-[11px]
+                font-semibold
+                px-2.5
+                py-1
+                rounded-full
+                border border-black/20
+                bg-[#F3F4F6]
+                text-[#374151]
+              "
+            >
+              #{tag.replace(/^#/, "")}
+            </span>
+          ))}
+        </div>
       )}
 
       {/* ================================================= */}
@@ -768,9 +791,7 @@ export default function PostCard({ post }) {
 
       <div className="flex items-center gap-5 text-[#6B7280] text-xs">
 
-        {/* ================================================= */}
-        {/* LIKE                                             */}
-        {/* ================================================= */}
+        {/* LIKE */}
 
         <button
           type="button"
@@ -806,28 +827,26 @@ export default function PostCard({ post }) {
 
         </button>
 
-        {/* ================================================= */}
-        {/* COMMENTS                                         */}
-        {/* ================================================= */}
+        {/* COMMENTS */}
 
-   <button
-  type="button"
-  onClick={() => setShowComments(true)}
-  className="flex items-center gap-1.5 hover:text-black transition"
-> 
-<MessageCircle size={16} /> 
+        <button
+          type="button"
+          onClick={() => setShowComments(true)}
+          className="flex items-center gap-1.5 hover:text-black transition"
+        >
+          <MessageCircle size={16} />
+        </button>
 
-</button>
-    
       </div>
+
       {showComments && (
-  <CommentBox
-    postId={_id}
-    postAuthorId={author?._id}
-    currentUserId={author?._id} // Replace with the actual current user ID
-    onClose={() => setShowComments(false)}
-  />
-)}
+        <CommentBox
+          postId={_id}
+          postAuthorId={author?._id}
+          currentUserId={author?._id} // Replace with the actual current user ID
+          onClose={() => setShowComments(false)}
+        />
+      )}
 
     </div>
   );

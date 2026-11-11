@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react'
+import { useRef, useState ,useEffect} from 'react'
 import { useNavigate } from 'react-router-dom'
+
 import {
   Camera,
   Pencil,
@@ -50,6 +51,8 @@ export default function ProfileHeader({
   const filled = completionFields(data).filter(Boolean).length
   const total = completionFields(data).length
   const completion = Math.round((filled / total) * 100)
+  const [postCount, setPostCount] = useState(0)
+  const [friendCount, setFriendCount] = useState(0)
 
   // -----------------------------------
   // IMAGE UPLOAD
@@ -103,6 +106,32 @@ export default function ProfileHeader({
     }
   }
 
+
+
+  // post / friend /comunnities count 
+  useEffect(() => {
+     const otherstats=async()=>{
+    try{
+       let api1 = await fetch(`${import.meta.env.VITE_API_URL}/post/my-posts/${data?._id}`,{
+        credentials:'include'
+         })
+       let result1 = await api1.json()
+       setPostCount(result1.count)
+       let api2 = await fetch(`${import.meta.env.VITE_API_URL}/friend/request/getFriends/${data?._id}`,{
+          credentials:'include'
+       })
+       let result2 = await api2.json()
+       setFriendCount(result2.count)
+    }
+    catch(err){
+    console.log(err)
+    }
+
+  }
+  otherstats()
+}
+  ,[])
+ 
   return (
     <div>
 
@@ -329,8 +358,8 @@ export default function ProfileHeader({
         <div className="flex flex-wrap gap-2.5 mb-5">
 
           {[
-            ['Posts', data?.stats?.postsCount || '0'],
-            ['Friends', data?.stats?.friendsCount || '0'],
+            ['Posts', postCount],
+            ['Friends', friendCount],
             ['Communities', data?.stats?.communitiesCount || '0'],
           ].map(([label, count], i) => (
 

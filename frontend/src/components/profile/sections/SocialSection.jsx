@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   Users2,
@@ -15,15 +15,54 @@ import {
   getFriends,
   removeFriend,
 } from "../../../services/friendshipApi";
+import { useNavigate } from "react-router-dom";
 
-export default function SocialSection({userId}) {
 
+export default function SocialSection({ userId ,isOwner }) {
+  const navigate = useNavigate()
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [openMenu, setOpenMenu] = useState(null);
+  const [openMenu, setOpenMenu] = useState(null)
 
-  
+  // ==========================
+  // handle chat
+  // =========================
+
+  const handleChat = async (targetUserId) => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/chat/conversations`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId: targetUserId }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        console.error("Chat initiation failed:", data);
+        return;
+      }
+
+      navigate("/feed", {
+        state: {
+          openChatWith: targetUserId,
+        },
+      });
+
+      setOpenMenu(null);
+    } catch (error) {
+      console.error("Chat initiation failed:", error);
+    }
+  };
+
+
   // =========================
   // GET FRIENDS
   // =========================
@@ -31,8 +70,8 @@ export default function SocialSection({userId}) {
   useEffect(() => {
     const fetchFriends = async () => {
       try {
-       
-        
+
+
         setLoading(true);
 
         const data = await getFriends(userId);
@@ -281,9 +320,8 @@ export default function SocialSection({userId}) {
             const user = friend.user;
 
             const fullName =
-              `${user?.firstName || ""} ${
-                user?.lastName || ""
-              }`.trim();
+              `${user?.firstName || ""} ${user?.lastName || ""
+                }`.trim();
 
             const profileImage =
               user?.profilePicture?.url || null;
@@ -379,10 +417,7 @@ export default function SocialSection({userId}) {
                       <button
                         type="button"
                         onClick={() => {
-                          setOpenMenu(null);
-
-                          // Add navigation later
-                          // navigate(`/profile/${user._id}`);
+                        navigate(`/profile/${user._id}`);
                         }}
                         className="
                           w-full
@@ -403,11 +438,12 @@ export default function SocialSection({userId}) {
 
                       {/* CHAT */}
 
-                      <button
+                     {isOwner && (
+                       <button
                         type="button"
                         onClick={() => {
-                          setOpenMenu(null);
-
+                          handleChat(user._id);
+                          setOpenMenu(null)
                           // Chat functionality later
                         }}
                         className="
@@ -426,36 +462,13 @@ export default function SocialSection({userId}) {
                         <MessageCircle size={14} />
                         Chat
                       </button>
+                     )}
 
-                      {/* PIN */}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenMenu(null);
-
-                          // Pin best friend API later
-                        }}
-                        className="
-                          w-full
-                          flex
-                          items-center
-                          gap-2
-                          px-3
-                          py-2.5
-                          text-xs
-                          font-semibold
-                          hover:bg-cream
-                          transition-colors
-                        "
-                      >
-                        <Pin size={14} />
-                        Pin as Best Friend
-                      </button>
 
                       {/* UNFRIEND */}
 
-                      <button
+                     {isOwner && (
+                       <button
                         type="button"
                         onClick={() =>
                           handleRemoveFriend(friend)
@@ -477,10 +490,12 @@ export default function SocialSection({userId}) {
                         <UserMinus size={14} />
                         Unfriend
                       </button>
+                     )}
 
                       {/* BLOCK */}
 
-                      <button
+                     {isOwner && (
+                       <button
                         type="button"
                         onClick={() => {
                           setOpenMenu(null);
@@ -504,6 +519,7 @@ export default function SocialSection({userId}) {
                         <Ban size={14} />
                         Block
                       </button>
+                     )}
 
                     </div>
                   )}

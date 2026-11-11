@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, Loader2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+import usePresence from "../../hooks/usePresence";
 const apiUrl = import.meta.env.VITE_API_URL;
 const DEBOUNCE_MS = 700;
 
@@ -26,11 +26,11 @@ function extractUsers(data) {
 export default function HomeSearchBar() {
   const navigate = useNavigate();
   const containerRef = useRef(null);
-
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const {isOnline} = usePresence();
 
   // =====================================================
   // DEBOUNCED SEARCH
@@ -243,38 +243,46 @@ export default function HomeSearchBar() {
               .join(" ");
 
             return (
-              <div
-                key={user._id}
-                onClick={() => handleSelectUser(user._id)}
-                className="
-                  flex items-center gap-3 px-4 py-2.5
-                  cursor-pointer
-                  hover:bg-[#F3F4F6]
-                  border-b-2 border-black last:border-b-0
-                  transition-colors
-                "
-              >
-                <div className="w-9 h-9 shrink-0 rounded-full bg-[#FACC15] border-2 border-black flex items-center justify-center text-xs font-bold overflow-hidden">
-                  {user.profilePicture?.url ? (
-                    <img
-                      src={user.profilePicture.url}
-                      alt={fullName || user.username}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    (user.firstName?.[0] || user.username?.[0] || "U").toUpperCase()
-                  )}
-                </div>
+            <div
+  key={user._id}
+  onClick={() => handleSelectUser(user._id)}
+  className="
+    flex items-center gap-3 px-4 py-2.5
+    cursor-pointer
+    hover:bg-[#F3F4F6]
+    border-b-2 border-black last:border-b-0
+    transition-colors
+  "
+>
+  <div className="relative w-9 h-9 shrink-0">
+    <div className="w-full h-full rounded-full bg-[#FACC15] border-2 border-black flex items-center justify-center text-xs font-bold overflow-hidden">
+      {user.profilePicture?.url ? (
+        <img
+          src={user.profilePicture.url}
+          alt={fullName || user.username}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        (user.firstName?.[0] || user.username?.[0] || "U").toUpperCase()
+      )}
+    </div>
 
-                <div className="min-w-0">
-                  <p className="font-bold text-sm truncate">
-                    {fullName || user.username}
-                  </p>
-                  <p className="text-xs text-[#6B7280] truncate">
-                    @{user.username}
-                  </p>
-                </div>
-              </div>
+    <span
+      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
+        isOnline(user._id) ? "bg-green-500" : "bg-gray-400"
+      }`}
+    />
+  </div>
+
+  <div className="min-w-0">
+    <p className="font-bold text-sm truncate">
+      {fullName || user.username}
+    </p>
+    <p className="text-xs text-[#6B7280] truncate">
+      @{user.username}
+    </p>
+  </div>
+</div>
             );
           })}
         </div>

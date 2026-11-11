@@ -1,12 +1,20 @@
 const apiUrl = import.meta.env.VITE_API_URL
 
 
-export const createPost = async ({ title, description, postType, visibility, media = [] }) => {
+
+export const createPost = async ({
+  title,
+  description,
+  visibility,
+  hashtags = [],
+  media = [],
+}) => {
   const formData = new FormData()
+
   formData.append('title', title)
   formData.append('description', description)
-  formData.append('postType', postType)
   formData.append('visibility', visibility)
+  formData.append('hashtags', JSON.stringify(hashtags))
 
   media.forEach((file) => {
     formData.append('media', file)
@@ -16,7 +24,6 @@ export const createPost = async ({ title, description, postType, visibility, med
     method: 'POST',
     credentials: 'include',
     body: formData,
-  
   })
 
   const data = await res.json().catch(() => ({}))
@@ -90,7 +97,7 @@ export const deletePost = async (id) => {
 
 export const likePost = async(id)=>{
   try{
-    const res = await fetch(`${apiUrl}/post/${id}/like`,{
+    let res = await fetch(`${apiUrl}/post/${id}/like`,{
       method:'POST',
       credentials:'include'
     })

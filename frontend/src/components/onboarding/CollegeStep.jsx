@@ -1,48 +1,104 @@
+
 import { useState, useRef, useEffect } from 'react'
-import { GraduationCap, Search } from 'lucide-react'
+import { GraduationCap, Search, MapPin, Home } from 'lucide-react'
 import Loader from '../Loader.jsx'
 
-// Free, no-key public API — swap this for your own backend endpoint later
-// (e.g. `${apiUrl}/colleges/search?q=...`) if you want a curated Indian dataset instead.
-const COLLEGE_SEARCH_URL = 'https://universities.hipolabs.com/search?country=India&name='
+const COLLEGE_SEARCH_URL =
+  'https://universities.hipolabs.com/search?country=India&name='
+
+const formatCollegeName = (name = '') =>
+  name
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
 
 export default function CollegeStep({ data, onChange }) {
   const [showDropdown, setShowDropdown] = useState(false)
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
+
   const wrapperRef = useRef(null)
   const debounceRef = useRef(null)
 
-  // Debounced live search — waits 350ms after typing stops before hitting the API
+  // Support the nested location schema.
+  const location = data.location || {}
+  const hometown = location.hometown || {}
+  const current = location.current || {}
+
+  const updateLocation = (type, field, value) => {
+    onChange('location', {
+      ...location,
+      [type]: {
+        ...(type === 'hometown' ? hometown : current),
+        [field]: value,
+      },
+    })
+  }
+
   useEffect(() => {
-    if (!data.collegeName || data.collegeName.length < 2) {
+    const collegeName = data.collegeName || ''
+
+    if (collegeName.trim().length < 2) {
       setResults([])
+      setLoading(false)
       return
     }
+
+    let cancelled = false
+
     clearTimeout(debounceRef.current)
+
     debounceRef.current = setTimeout(async () => {
       setLoading(true)
+
       try {
-        const res = await fetch(`${COLLEGE_SEARCH_URL}${encodeURIComponent(data.collegeName)}`)
+        const res = await fetch(
+          `${COLLEGE_SEARCH_URL}${encodeURIComponent(collegeName.trim())}`
+        )
+
+        if (!res.ok) {
+          throw new Error('Failed to search colleges')
+        }
+
         const json = await res.json()
-        setResults(json.slice(0, 8)) // cap the dropdown length
-      } catch (err) {
-        setResults([])
+
+        const uniqueColleges = [
+          ...new Map(
+            json.map((college) => [college.name, college])
+          ).values(),
+        ]
+
+        if (!cancelled) {
+          setResults(uniqueColleges.slice(0, 8))
+        }
+      } catch {
+        if (!cancelled) setResults([])
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }, 350)
-    return () => clearTimeout(debounceRef.current)
+
+    return () => {
+      cancelled = true
+      clearTimeout(debounceRef.current)
+    }
   }, [data.collegeName])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target)
+      ) {
         setShowDropdown(false)
       }
     }
+
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+
+    return () =>
+      document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const selectCollege = (name) => {
@@ -50,22 +106,81 @@ export default function CollegeStep({ data, onChange }) {
     setShowDropdown(false)
   }
 
+  const inputClass =
+    'w-full px-4 py-3 rounded-xl border-[3px] border-ink focus:bg-sunny/20 outline-none text-sm transition'
+
+  const renderLocationFields = (type, values) => (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <input
+        value={values.city || ''}
+        onChange={(e) =>
+          updateLocation(type, 'city', e.target.value)
+        }
+        placeholder="City"
+        aria-label={`${type} city`}
+        className={inputClass}
+      />
+
+      <input
+        value={values.state || ''}
+        onChange={(e) =>
+          updateLocation(type, 'state', e.target.value)
+        }
+        placeholder="State"
+        aria-label={`${type} state`}
+        className={inputClass}
+      />
+
+      <input
+        value={values.country ?? 'India'}
+        onChange={(e) =>
+          updateLocation(type, 'country', e.target.value)
+        }
+        placeholder="Country"
+        aria-label={`${type} country`}
+        className={inputClass}
+      />
+    </div>
+  )
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* College name */}
       <div ref={wrapperRef} className="relative">
-        <label className="text-xs font-display font-semibold mb-1.5 block">College name</label>
+        <label className="text-xs font-display font-semibold mb-1.5 block">
+          College name
+        </label>
+
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" size={18} />
+          <Search
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40"
+            size={18}
+          />
+
           <input
-            value={data.collegeName}
+            value={data.collegeName || ''}
             onChange={(e) => {
               onChange('collegeName', e.target.value)
               setShowDropdown(true)
             }}
+            onBlur={() => {
+              setTimeout(() => {
+                if (
+                  !wrapperRef.current?.contains(document.activeElement)
+                ) {
+                  onChange(
+                    'collegeName',
+                    formatCollegeName(data.collegeName || '')
+                  )
+                }
+              }, 150)
+            }}
             onFocus={() => setShowDropdown(true)}
             placeholder="Start typing your college..."
+            autoComplete="off"
             className="w-full pl-11 pr-10 py-3 rounded-xl border-[3px] border-ink focus:bg-sunny/20 outline-none text-sm transition"
           />
+
           {loading && (
             <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
               <Loader size={16} color="#16151A" />
@@ -73,64 +188,69 @@ export default function CollegeStep({ data, onChange }) {
           )}
         </div>
 
-        {showDropdown && data.collegeName.length >= 2 && (
-          <div className="absolute z-20 mt-2 w-full bg-white border-[3px] border-ink rounded-xl shadow-hard max-h-52 overflow-y-auto">
-            {results.length > 0 ? (
-              results.map((college) => (
-                <button
-                  key={college.name}
-                  type="button"
-                  onClick={() => selectCollege(college.name)}
-                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-sunny/30 flex items-center gap-2 border-b border-ink/10 last:border-b-0"
-                >
-                  <GraduationCap size={16} className="text-ink/40 shrink-0" />
-                  {college.name}
-                </button>
-              ))
-            ) : !loading ? (
-              <p className="px-4 py-3 text-xs text-ink/50">
-                No matches — you can still type your college name manually.
-              </p>
-            ) : null}
-          </div>
-        )}
+        {showDropdown &&
+          (data.collegeName || '').trim().length >= 2 && (
+            <div className="absolute z-20 mt-2 w-full bg-white border-[3px] border-ink rounded-xl shadow-hard max-h-52 overflow-y-auto">
+              {results.length > 0 ? (
+                results.map((college, index) => (
+                  <button
+                    key={`${college.name}-${index}`}
+                    type="button"
+                    onClick={() => selectCollege(college.name)}
+                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-sunny/30 flex items-center gap-2 border-b border-ink/10 last:border-b-0"
+                  >
+                    <GraduationCap
+                      size={16}
+                      className="text-ink/40 shrink-0"
+                    />
+                    {college.name}
+                  </button>
+                ))
+              ) : !loading ? (
+                <p className="px-4 py-3 text-xs text-ink/50">
+                  No matches found. You can still enter your college name manually.
+                </p>
+              ) : null}
+            </div>
+          )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-xs font-display font-semibold mb-1.5 block">Department</label>
-          <input
-            value={data.department}
-            onChange={(e) => onChange('department', e.target.value)}
-            placeholder="Computer Engineering"
-            className="w-full px-4 py-3 rounded-xl border-[3px] border-ink focus:bg-sunny/20 outline-none text-sm transition"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-display font-semibold mb-1.5 block">Branch</label>
-          <input
-            value={data.branch}
-            onChange={(e) => onChange('branch', e.target.value)}
-            placeholder="CSE"
-            className="w-full px-4 py-3 rounded-xl border-[3px] border-ink focus:bg-sunny/20 outline-none text-sm transition"
-          />
-        </div>
+      {/* Department */}
+      <div>
+        <label className="text-xs font-display font-semibold mb-1.5 block">
+          Department
+        </label>
+
+        <input
+          value={data.department || ''}
+          onChange={(e) => onChange('department', e.target.value)}
+          placeholder="Computer Engineering"
+          className={inputClass}
+        />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      {/* Course, Year and Section */}
+      <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="text-xs font-display font-semibold mb-1.5 block">Course</label>
+          <label className="text-xs font-display font-semibold mb-1.5 block">
+            Course
+          </label>
+
           <input
-            value={data.course}
+            value={data.course || ''}
             onChange={(e) => onChange('course', e.target.value)}
             placeholder="B.Tech"
-            className="w-full px-4 py-3 rounded-xl border-[3px] border-ink focus:bg-sunny/20 outline-none text-sm transition"
+            className="w-full px-3 py-3 rounded-xl border-[3px] border-ink focus:bg-sunny/20 outline-none text-sm transition"
           />
         </div>
+
         <div>
-          <label className="text-xs font-display font-semibold mb-1.5 block">Year</label>
+          <label className="text-xs font-display font-semibold mb-1.5 block">
+            Year
+          </label>
+
           <select
-            value={data.year}
+            value={data.year || ''}
             onChange={(e) => onChange('year', e.target.value)}
             className="w-full px-3 py-3 rounded-xl border-[3px] border-ink focus:bg-sunny/20 outline-none text-sm transition bg-white"
           >
@@ -141,15 +261,49 @@ export default function CollegeStep({ data, onChange }) {
             <option value="4">4th</option>
           </select>
         </div>
+
         <div>
-          <label className="text-xs font-display font-semibold mb-1.5 block">Section</label>
+          <label className="text-xs font-display font-semibold mb-1.5 block">
+            Section
+          </label>
+
           <input
-            value={data.section}
+            value={data.section || ''}
             onChange={(e) => onChange('section', e.target.value)}
             placeholder="A"
-            className="w-full px-4 py-3 rounded-xl border-[3px] border-ink focus:bg-sunny/20 outline-none text-sm transition"
+            className="w-full px-3 py-3 rounded-xl border-[3px] border-ink focus:bg-sunny/20 outline-none text-sm transition"
           />
         </div>
+      </div>
+
+      {/* Hometown */}
+      <div className="space-y-3 pt-3 border-t-2 border-ink/10">
+        <div className="flex items-center gap-2">
+          <Home size={18} />
+          <h3 className="font-display font-semibold text-sm">
+            Hometown
+          </h3>
+          <span className="text-xs text-ink/50">
+            (Permanent home)
+          </span>
+        </div>
+
+        {renderLocationFields('hometown', hometown)}
+      </div>
+
+      {/* Current location */}
+      <div className="space-y-3 pt-3 border-t-2 border-ink/10">
+        <div className="flex items-center gap-2">
+          <MapPin size={18} />
+          <h3 className="font-display font-semibold text-sm">
+            Current location
+          </h3>
+          <span className="text-xs text-ink/50">
+            (Where you stay now)
+          </span>
+        </div>
+
+        {renderLocationFields('current', current)}
       </div>
     </div>
   )

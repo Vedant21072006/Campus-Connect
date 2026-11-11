@@ -38,38 +38,54 @@ export default function Profile() {
   
 
    const apiUrl = import.meta.env.VITE_API_URL
-  useEffect(() => {
-  
-    
 
-    const fetchProfile = async ()=> {
-      try {
-      
-        const response = await fetch(`${apiUrl}/profile/my-profile/${id}`, {
-          method: 'GET',
-          credentials: 'include',
-        })
+useEffect(() => {
+  if (!id) {
+    setLoading(false);
+    return;
+  }
 
+  const controller = new AbortController();
 
-        const api = await response.json()
-        
-   
+  const fetchProfile = async () => {
+    setLoading(true);
 
-        
-
-        if (response.ok && api.success) {
-          setProfileData(api.user)
-      setIsOwner(api.isOwnProfile)
+    try {
+      const response = await fetch(
+        `${apiUrl}/profile/my-profile/${id}`,
+        {
+          method: "GET",
+          credentials: "include",
+          signal: controller.signal,
         }
-               
-      } catch (error) {
-        console.log(error)
-      } finally {
-        setLoading(false)
+      );
+
+      const api = await response.json();
+
+      if (!response.ok || !api.success) {
+        setProfileData(null);
+        return;
       }
-    } 
-    fetchProfile()
-  }, [])
+
+      setProfileData(api.user);
+      setIsOwner(api.isOwnProfile);
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        console.error("Failed to fetch profile:", error);
+        setProfileData(null);
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
+    }
+  };
+
+  fetchProfile();
+
+  return () => controller.abort();
+}, [id, apiUrl]);
+
 
   const handleImageChange = (field, dataUrl) => {
     setProfileData((prev) => ({
@@ -90,7 +106,7 @@ export default function Profile() {
         return <ProfessionalSection data={profileData.professional} />
 
       case 'social':
-        return <SocialSection userId={profileData._id}  />
+        return <SocialSection userId={profileData._id}  isOwner={isOwner}  />
 
       case 'communities':
         return <CommunitiesSection data={profileData} />
@@ -199,6 +215,7 @@ export default function Profile() {
           <SectionTabs
             sections={SECTIONS}
             activeTab={activeTab}
+            isOwner={isOwner}
             onChange={setActiveTab}
           />
 

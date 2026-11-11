@@ -1,6 +1,12 @@
-import { Search, MessageCircle, Plus, Home } from 'lucide-react'
-
-export default function BottomNav({ activeView = 'feed', onHome, onSearch, onChats, onCreatePost }) {
+import { Search, MessageCircle, Plus, Home, UsersRound } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+export default function BottomNav({  activeView = 'feed',
+  onHome,
+  onSearch,
+  onChats,
+  onCreatePost,
+  onConnect, }) {
+  const navigate = useNavigate()
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-black/5 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
       <div className="max-w-xl mx-auto flex items-center justify-between px-6 py-2.5">
@@ -17,7 +23,7 @@ export default function BottomNav({ activeView = 'feed', onHome, onSearch, onCha
           className={`relative flex flex-col items-center gap-0.5 ${activeView === 'chats' ? 'text-[#7C3AED]' : 'text-[#9CA3AF]'}`}
         >
           <MessageCircle size={20} />
-          <span className="absolute -top-1 right-0 bg-[#EF4444] text-white text-[9px] font-semibold w-4 h-4 rounded-full flex items-center justify-center">2</span>
+          <span className="absolute -top-1 right-0 bg-[#EF4444] text-white text-[9px] font-semibold w-3 h-3 rounded-full flex items-center justify-center"></span>
           <span className="text-[10px] font-medium">Chats</span>
         </button>
 
@@ -36,10 +42,17 @@ export default function BottomNav({ activeView = 'feed', onHome, onSearch, onCha
           <span className="text-[10px] font-semibold">Home</span>
         </button>
 
-        <button className="flex flex-col items-center gap-0.5 text-[#9CA3AF]">
-          <div className="w-5 h-5 rounded-full bg-[#7C3AED] flex items-center justify-center text-white text-[9px] font-semibold">V</div>
-          <span className="text-[10px] font-medium">Profile</span>
-        </button>
+      <button
+  onClick= {()=>navigate('/connect')}
+  className={`flex flex-col items-center gap-0.5 ${
+    activeView === 'connect'
+      ? 'text-[#7C3AED]'
+      : 'text-[#9CA3AF]'
+  }`}
+>
+  <UsersRound size={20} strokeWidth={2} />
+  <span className="text-[10px] font-medium">Connect</span>
+</button>
       </div>
     </nav>
   )

@@ -6,13 +6,14 @@ import cloudinary from "../config/cloudinary.js";
 import Friendship from '../models/freindship.js'
 import PostLike from "../models/postLike.js";
 import Comment from "../models/comments.js";
+import mongoose from "mongoose";
 
 export const createPost = async (req, res) => {
   try {
     const {
       title,
       description,
-      postType,
+      hashtags,
       visibility,
     } = req.body;
 
@@ -27,7 +28,7 @@ export const createPost = async (req, res) => {
 
     const { username, college, role } = authorDetails;
 
-    const media = []
+    const media = [];
 
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
@@ -57,12 +58,40 @@ export const createPost = async (req, res) => {
       }
     }
 
+    // Normalize hashtags into an array
+    let normalizedHashtags = [];
+
+    if (Array.isArray(hashtags)) {
+      normalizedHashtags = hashtags;
+    } else if (typeof hashtags === "string" && hashtags.trim()) {
+      try {
+        // Supports a JSON-serialized array from FormData
+        const parsed = JSON.parse(hashtags);
+
+        normalizedHashtags = Array.isArray(parsed)
+          ? parsed
+          : [hashtags];
+      } catch {
+        normalizedHashtags = [hashtags];
+      }
+    }
+
+    // Trim whitespace and remove duplicates
+    normalizedHashtags = [
+      ...new Set(
+        normalizedHashtags
+          .filter((tag) => typeof tag === "string")
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+      ),
+    ];
+
     const post = await Post.create({
       author: authorDetails._id,
- 
+
       authorSnapshot: {
         username,
-        authorId:authorDetails._id,
+        authorId: authorDetails._id,
         college: {
           year: college?.year,
           course: college?.course,
@@ -74,12 +103,13 @@ export const createPost = async (req, res) => {
       metadata: {
         title,
         description,
-        media: media,
+        media,
       },
 
-      postType,
+      hashtags: normalizedHashtags,
+
       visibility,
-      isOwnPost:true
+      isOwnPost: true,
     });
 
     return res.status(201).json({
@@ -87,7 +117,6 @@ export const createPost = async (req, res) => {
       message: "Post created successfully",
       post,
     });
-
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -96,27 +125,71 @@ export const createPost = async (req, res) => {
   }
 };
 
+
+
 export const getPosts = async (req, res) => {
   try {
     const currentUserId = req.user._id;
+    const limit = 10;
 
-    // ==========================================
-    // 1. GET LATEST POSTS
-    // ==========================================
+    const { cursor } = req.query;
 
-    const postdata = await Post.find()
-      .sort({ createdAt: -1 })
-      .limit(10)
+    // 1. Build cursor filter
+    const filter = {};
+
+    if (cursor) {
+      let decodedCursor;
+
+      try {
+        decodedCursor = JSON.parse(
+          Buffer.from(cursor, "base64url").toString("utf8")
+        );
+      } catch {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid pagination cursor",
+        });
+      }
+
+      const { createdAt, id } = decodedCursor;
+
+      if (
+        !createdAt ||
+        !id ||
+        !mongoose.isValidObjectId(id) ||
+        Number.isNaN(Date.parse(createdAt))
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid pagination cursor",
+        });
+      }
+
+      const cursorDate = new Date(createdAt);
+
+      filter.$or = [
+        { createdAt: { $lt: cursorDate } },
+        {
+          createdAt: cursorDate,
+          _id: { $lt: new mongoose.Types.ObjectId(id) },
+        },
+      ];
+    }
+
+    // 2. Fetch one extra post to determine hasMore
+    const fetchedPosts = await Post.find(filter)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit + 1)
       .populate(
         "author",
         "firstName lastName username profilePicture role"
       )
       .lean();
 
-    // ==========================================
-    // 2. GET UNIQUE AUTHORS FROM THESE POSTS
-    // ==========================================
+    const hasMore = fetchedPosts.length > limit;
+    const postdata = fetchedPosts.slice(0, limit);
 
+    // 3. Get unique authors
     const authorIds = [
       ...new Set(
         postdata
@@ -125,10 +198,7 @@ export const getPosts = async (req, res) => {
       ),
     ];
 
-    // ==========================================
-    // 3. GET FRIENDSHIPS WITH THESE AUTHORS
-    // ==========================================
-
+    // 4. Fetch friendships with these authors
     const friendships = await Friendship.find({
       $or: [
         {
@@ -142,44 +212,26 @@ export const getPosts = async (req, res) => {
       ],
     }).lean();
 
-    // ==========================================
-    // 4. CREATE RELATIONSHIP MAP
-    // ==========================================
-
+    // 5. Build relationship map
     const relationshipMap = new Map();
 
     friendships.forEach((friendship) => {
-      const requesterId =
-        friendship.requester.toString();
-
-      const recipientId =
-        friendship.recipient.toString();
-
-      const currentUser =
-        currentUserId.toString();
+      const requesterId = friendship.requester.toString();
+      const recipientId = friendship.recipient.toString();
+      const currentId = currentUserId.toString();
 
       const otherUserId =
-        requesterId === currentUser
-          ? recipientId
-          : requesterId;
+        requesterId === currentId ? recipientId : requesterId;
 
       relationshipMap.set(otherUserId, {
         status: friendship.status,
-
         direction:
-          requesterId === currentUser
-            ? "sent"
-            : "received",
+          requesterId === currentId ? "sent" : "received",
       });
     });
 
-    // ==========================================
-    // 5. GET CURRENT USER'S LIKES
-    // ==========================================
-
-    const postIds = postdata.map(
-      (post) => post._id
-    );
+    // 6. Fetch current user's likes for these posts
+    const postIds = postdata.map((post) => post._id);
 
     const likes = await PostLike.find({
       user: currentUserId,
@@ -188,59 +240,51 @@ export const getPosts = async (req, res) => {
       .select("post")
       .lean();
 
-    // ==========================================
-    // 6. CREATE LIKED POST MAP
-    // ==========================================
-
     const likedPostIds = new Set(
-      likes.map((like) =>
-        like.post.toString()
-      )
+      likes.map((like) => like.post.toString())
     );
 
-    // ==========================================
-    // 7. ADD RELATIONSHIP + LIKE DATA
-    // ==========================================
-
+    // 7. Attach relationship and like data
     const postsWithData = postdata.map((post) => {
-      const authorId =
-        post.author?._id?.toString();
-
-      const relationship =
-        relationshipMap.get(authorId);
+      const authorId = post.author?._id?.toString();
+      const relationship = relationshipMap.get(authorId);
 
       return {
         ...post,
-
-        // Friendship
-        friendStatus:
-          relationship?.status || "none",
-
-        friendRequestDirection:
-          relationship?.direction || null,
-
-        // Like
-        isLiked: likedPostIds.has(
-          post._id.toString()
-        ),
+        friendStatus: relationship?.status || "none",
+        friendRequestDirection: relationship?.direction || null,
+        isLiked: likedPostIds.has(post._id.toString()),
       };
     });
 
-    // ==========================================
-    // 8. SEND RESPONSE
-    // ==========================================
+    // 8. Generate cursor from the last returned post
+    const lastPost = postdata[postdata.length - 1];
+
+    const nextCursor =
+      hasMore && lastPost
+        ? Buffer.from(
+            JSON.stringify({
+              createdAt: lastPost.createdAt.toISOString(),
+              id: lastPost._id.toString(),
+            })
+          ).toString("base64url")
+        : null;
 
     return res.status(200).json({
       success: true,
       postdata: postsWithData,
+      pagination: {
+        limit,
+        hasMore,
+        nextCursor,
+      },
     });
-
   } catch (error) {
     console.error("Get posts error:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to fetch posts",
     });
   }
 };
@@ -290,6 +334,7 @@ export const myPosts = async (req, resp) => {
 
     return resp.status(201).json({
       success:true,
+      count: posts.length,
       posts
     })
   }

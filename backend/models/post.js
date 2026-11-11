@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 
 const postSchema = new mongoose.Schema(
@@ -8,59 +9,52 @@ const postSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    
+
     authorSnapshot: {
-      authorId:{
-         type:String,
-         required:true
+      authorId: {
+        type: String,
+        required: true,
       },
       username: {
         type: String,
         required: true,
       },
-
       college: {
         year: {
           type: String,
         },
-
         course: {
           type: String,
         },
-
         branch: {
           type: String,
         },
       },
-
       role: {
         type: String,
       },
     },
+
     metadata: {
       title: {
         type: String,
         trim: true,
         maxlength: 150,
       },
-
       description: {
         type: String,
         trim: true,
         maxlength: 5000,
       },
-
       media: [
         {
           url: {
             type: String,
             required: true,
           },
-
           publicId: {
             type: String,
           },
-
           type: {
             type: String,
             enum: ["image", "video"],
@@ -70,21 +64,20 @@ const postSchema = new mongoose.Schema(
       ],
     },
 
-    postType: {
-      type: String,
-      enum: [
-          "GENERAL",
-    "QUESTION",
-    "EVENT",
-    "ACHIEVEMENT"
+    hashtags: {
+      type: [
+        {
+          type: String,
+          trim: true,
+        },
       ],
-      default: "general",
+      default: [],
       index: true,
     },
 
     visibility: {
       type: String,
-      enum: ["public", "campus"],
+      enum: ["public", "private", "campus"],
       default: "campus",
       index: true,
     },
@@ -95,19 +88,16 @@ const postSchema = new mongoose.Schema(
         default: 0,
         min: 0,
       },
-
       comments: {
         type: Number,
         default: 0,
         min: 0,
       },
-
       shares: {
         type: Number,
         default: 0,
         min: 0,
       },
-
       saves: {
         type: Number,
         default: 0,
@@ -119,10 +109,11 @@ const postSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    isOwnPost:{
-      type:Boolean,
-      default:false
-    }
+
+    isOwnPost: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

@@ -32,8 +32,23 @@ export default function AboutSection({ data }) {
           </div>
           <h3 className="font-display font-semibold text-base">Location</h3>
         </div>
-        <InfoRow icon={MapPin} label="Current city" value={data?.location?.current?.city} />
-        <InfoRow icon={Home} label="Home town" value={data?.location?.hometown?.city} />
+  <InfoRow
+  icon={MapPin}
+  label="Current city"
+  value={[
+    data?.location?.current?.city,
+    data?.location?.current?.state,
+  ].filter(Boolean).join(", ")}
+/>
+
+<InfoRow
+  icon={Home}
+  label="Hometown"
+  value={[
+    data?.location?.hometown?.city,
+    data?.location?.hometown?.state,
+  ].filter(Boolean).join(", ")}
+/>
       </div>
     </div>
   )

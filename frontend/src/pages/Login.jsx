@@ -11,48 +11,88 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState(null)
   const apiUrl = import.meta.env.VITE_API_URL
-  const handleLogin = async (e) => {
-    e.preventDefault()
-    if (!email || !password) {
-      setToast({ message: 'Fill in both fields first!', type: 'error' })
+
+
+   // handle login 
+   const handleLogin = async (e) => {
+  e.preventDefault()
+
+  // Frontend validation: empty fields
+  const normalizedEmail = email.trim()
+
+  if (!normalizedEmail && !password) {
+    setToast({
+      message: 'Please enter your college email and password.',
+      type: 'error',
+    })
+    return
+  }
+
+  if (!normalizedEmail) {
+    setToast({
+      message: 'Please enter your college email.',
+      type: 'error',
+    })
+    return
+  }
+
+  if (!password) {
+    setToast({
+      message: 'Please enter your password.',
+      type: 'error',
+    })
+    return
+  }
+
+  setLoading(true)
+
+  try {
+    const response = await fetch(`${apiUrl}/auth/login`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: normalizedEmail,
+        password,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok || !data.success) {
+      // Display the backend's error message
+      const backendMessage =
+        typeof data.message === 'string'
+          ? data.message
+          : 'Login failed. Please try again.'
+
+      setToast({
+        message: backendMessage,
+        type: 'error',
+      })
       return
     }
-    setLoading(true)
-    try {
-      let logindetails={email,password}
-      let api = await fetch(`${apiUrl}/auth/login`,{
-        method:'POST',
-        credentials:'include',
-        body:JSON.stringify(logindetails),
-        headers:{
-          'Content-Type':'application/json'
-        }
-       
-        
-        
-      })
-      api =await api.json()
-      console.log(api);
-      
-      if(!api.success){
-        setToast({message:api.message,type:'error'})
-        return
-      }
 
-       if(api.success){
-      setToast({ message: `Welcome ${api.user.name} 🎉`, type: 'success' })
-      setTimeout(()=>{
-             navigate('/feed')
-      },3000)
+    setToast({
+      message: `Welcome ${data.user?.name || 'back'} 🎉`,
+      type: 'success',
+    })
 
-       }
-
-    } catch (err) {
-      setToast({ message: 'Wrong email or password.', type: 'error' })
-    } finally {
-      setLoading(false)
-    }
+    setTimeout(() => {
+      navigate('/feed')
+    }, 1500)
+  } catch (error) {
+    setToast({
+      message: 'Unable to connect to the server. Please try again.',
+      type: 'error',
+    })
+  } finally {
+    setLoading(false)
   }
+}
+
 
   return (
     <div className="min-h-screen bg-sky/30 flex items-center justify-center px-6 py-12 relative overflow-hidden font-body">

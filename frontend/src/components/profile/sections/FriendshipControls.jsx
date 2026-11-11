@@ -20,6 +20,8 @@ import {
   rejectRequest,
 } from '../../../services/friendshipApi.js'
 
+import { useNavigate } from "react-router-dom";
+
 // status: 'none' | 'pending_sent' | 'pending_received' | 'friends' | 'blocked' | 'self'
 export default function FriendshipControls({
   targetUserId,
@@ -32,6 +34,9 @@ export default function FriendshipControls({
   const [requestId, setRequestId] = useState(initialRequestId)
   const [loading, setLoading] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+
+
+  const navigate = useNavigate();
 
   const menuRef = useRef(null)
 
@@ -174,9 +179,30 @@ export default function FriendshipControls({
     }
   }
 
-  const handleChat = () => {
-    setMenuOpen(false)
-    onChat?.(targetUserId)
+  const handleChat = async () => {
+    try {
+      let response = await fetch(`${import.meta.env.VITE_API_URL}/chat/conversations`, {
+        method: 'POST',
+        credentials: 'include',
+        body: JSON.stringify({ userId: targetUserId }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      response = await response.json()
+      if (response.success) {
+        if (response.exists) {
+          navigate("/feed", {
+            state: {
+              openChatWith: targetUserId,
+            },
+          });
+        }
+      }
+    }
+    catch (error) {
+      console.error('Chat initiation failed:', error);
+    }
   }
 
   // -----------------------------------

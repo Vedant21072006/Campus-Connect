@@ -1,4 +1,4 @@
-export default function SectionTabs({ sections, activeTab, onChange }) {
+export default function SectionTabs({ sections, activeTab,isOwner,onChange }) {
   return (
     <div className="flex gap-2 overflow-x-auto pb-2 mb-6 -mx-1 px-1 scrollbar-hide">
       {sections.map(({ key, label, icon: Icon }) => {
