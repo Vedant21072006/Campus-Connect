@@ -138,12 +138,12 @@ export const verifyotp = async (req, resp) => {
       );
 
       // Set HTTP-only cookie
-      resp.cookie('token', token, {
-         httpOnly: true,
-         secure: process.env.NODE_ENV === 'production',
-         sameSite: 'lax',
-         maxAge: 7 * 24 * 60 * 60 * 1000
-      });
+    resp.cookie("token", token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+});
 
       // Update last login
       user.lastLogin = new Date();
@@ -219,13 +219,12 @@ export const login = async (req, resp) => {
       );
 
       // Set HTTP-only cookie
-      resp.cookie('token', token, {
-         httpOnly: true,
-         secure: process.env.NODE_ENV === 'production',
-         sameSite: 'lax',
-         maxAge: 7 * 24 * 60 * 60 * 1000
-      });
-
+    resp.cookie("token", token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+});
       // Update last login
       user.lastLogin = new Date();
       await user.save();
