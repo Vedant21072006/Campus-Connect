@@ -1,7 +1,7 @@
 
 import AiSuggestions from './AiSuggestions.jsx'
 import TrendingCampus from './TrendingCampus.jsx'
-import Leaderboard from './Leaderboard.jsx'
+import Leaderboard from './LeaderBoard.jsx'
 
 export default function RightSidebar({ aiSuggestions, trending, leaderboard }) {
   return (
