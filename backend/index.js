@@ -32,7 +32,20 @@ app.use(
 );
 
 app.use(cookieParser());
+
 app.use(express.json());
+
+app.use(express.json());
+
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    service: "CampusConnect API",
+  });
+});
+
+// API routes
+app.use("/api/auth", authRoute);
 
 // API routes
 app.use("/api/auth", authRoute);

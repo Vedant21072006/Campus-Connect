@@ -1,21 +1,31 @@
-import { createClient } from 'redis';
 
-console.log('REDIS URL:', process.env.REDIS_URL);
+import dotenv from "dotenv";
+dotenv.config();
+
+import { createClient } from "redis";
+
+const redisUrl = process.env.REDIS_URL;
+
+if (!redisUrl) {
+  throw new Error("REDIS_URL is not configured. Check backend/.env");
+}
 
 const redisClient = createClient({
-  url:"redis://default:6ysJFUQD9G2Vrt0yH0X67ADtXVcwyGNG@childlike-bluebell-sagely-28101.db.redis.io:14828"
+  url: redisUrl,
 });
 
-redisClient.on('connect', () => {
-  console.log('✅ Redis Connected');
+redisClient.on("connect", () => {
+  console.log("Redis connected");
 });
 
-redisClient.on('error', (err) => {
-  console.error('❌ Redis Error:', err);
+redisClient.on("error", (err) => {
+  console.error("Redis connection error:", err.message);
 });
 
 export const connectRedis = async () => {
-  await redisClient.connect();
+  if (!redisClient.isOpen) {
+    await redisClient.connect();
+  }
 };
 
 export default redisClient;
