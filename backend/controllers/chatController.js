@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Conversation from "../models/Conversation.js";
-import Message from "../models/message.js";
+import Message from "../models/Message.js";
 export const createOrGetConversation = async (req, res) => {
   try {
     const currentUserId = req.user._id;
